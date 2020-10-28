@@ -1,1 +1,1 @@
-web: gunicorn app:__init__
+web: gunicorn --worker-class quart.worker.GunicornWorker main_loop:__init__ 
