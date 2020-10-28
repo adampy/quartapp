@@ -1,0 +1,4 @@
+Quart
+asyncpg
+asyncio
+gunicorn
