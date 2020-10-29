@@ -1,1 +1,1 @@
-web: hypercorn __init__:app 
+web: hypercorn __init__:app  --bind 0.0.0.0:${PORT}
