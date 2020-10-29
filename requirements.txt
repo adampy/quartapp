@@ -1,4 +1,4 @@
 Quart
 asyncpg
 asyncio
-gunicorn
+hypercorn
