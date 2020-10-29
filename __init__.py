@@ -24,10 +24,6 @@ def create_app():
 
     return app
 
-def main():
-    '''This subroutine runs at the start of the program.'''
-    app = create_app()
-    app.run(debug = True)
-
+app = create_app()
 if __name__ == "__main__":
-    main()
+    app.run(debug = True)
