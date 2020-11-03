@@ -4,7 +4,6 @@ import asyncpg
 import asyncio
 from csv import reader
 import os
-import utils
 from utils import DatabaseHandler
 
 # TODO: Get student methods - perhaps a studentmanager class
@@ -23,7 +22,6 @@ def create_app():
     '''This subroutine creates the Quart app and returns it. The DB is also connected in this step.'''
     app = Quart(__name__)
     app.register_blueprint(student.bp)
-    app.register_blueprint(utils.bp)
 
     @app.before_serving
     async def on_startup():
