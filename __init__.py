@@ -4,6 +4,12 @@ import asyncpg
 import asyncio
 from csv import reader
 import os
+import utils
+from utils import DatabaseHandler
+
+# TODO: Get student methods - perhaps a studentmanager class
+# TODO: Validate inputs for students
+# TODO: Try and except for database inputs - move try and except into DatabaseHandler methods
 
 try:
     with open("credentials.csv", 'r') as f:
@@ -17,10 +23,11 @@ def create_app():
     '''This subroutine creates the Quart app and returns it. The DB is also connected in this step.'''
     app = Quart(__name__)
     app.register_blueprint(student.bp)
+    app.register_blueprint(utils.bp)
 
     @app.before_serving
     async def on_startup():
-        app.config['pool'] = await asyncpg.create_pool(os.environ['GCSE_DATABASE_URL'] + "?sslmode=require", max_size=20)
+        app.config['db_handler'] = await DatabaseHandler.create()
 
     return app
 
