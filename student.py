@@ -1,5 +1,4 @@
 ﻿from quart import Blueprint, request, current_app
-from async_timeout import timeout
 import asyncpg
 from utils import hash_func, is_student_valid
 
