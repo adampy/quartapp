@@ -1,16 +1,8 @@
 ﻿from quart import Blueprint, request, current_app
 import asyncpg
-from utils import hash_func, is_student_valid
+from utils import hash_func, is_student_valid, stringify
 
 bp = Blueprint("student", __name__, url_prefix = "/student")
-
-def stringify(data):
-    '''Wraps a 2D list of records, data, into <pre> tags ready for it to be displayed via HTML'''
-    to_return = "<pre>"
-    for record in data:
-        to_return += ', '.join([str(x) for x in record])
-        to_return += '\n'
-    return to_return + "</pre>"
 
 @bp.route('/auth', methods=['POST'])
 async def auth():
@@ -24,7 +16,7 @@ async def auth():
         return '', 401
 
 @bp.route('/', methods = ['GET', 'POST'])
-async def get_students():
+async def main_route():
     '''/student route.'''
     db = current_app.config['db_handler']
 
