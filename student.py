@@ -1,6 +1,6 @@
 ﻿from quart import Blueprint, request, current_app
 import asyncpg
-from utils import hash_func, is_student_valid, stringify
+from utils import hash_func, is_student_valid, stringify, HTTPCode
 
 bp = Blueprint("student", __name__, url_prefix = "/student")
 
@@ -11,9 +11,9 @@ async def auth():
     username, password = data['username'], data['password']
     results = await is_student_valid(username, password)
     if results:
-        return str(results), 200
+        return str(results), HTTPCode.OK
     else:
-        return '', 401
+        return '', HTTPCode.UNAUTHORIZED
 
 @bp.route('/', methods = ['GET', 'POST'])
 async def main_route():
@@ -38,11 +38,12 @@ async def main_route():
 
         await db.execute("INSERT INTO student (forename, surname, username, alps, password, salt) VALUES ($1, $2, $3, $4, $5, $6)", *params)
         student_obj = await db.fetchrow("SELECT * FROM student WHERE username = $1", data['username'])
-        return stringify([student_obj]), 201
+        return stringify([student_obj]), HTTPCode.CREATED
         
 
 @bp.route('/<id>', methods = ['GET', 'PUT', 'PATCH', 'DELETE'])
 async def student_function(id):
+    '''Function defining functionality for a specific student.'''
     db = current_app.config['db_handler']
     form = await request.form
     id = int(id)
@@ -51,7 +52,7 @@ async def student_function(id):
 
     if request.method == 'GET':
         # Get given student
-        return stringify([current_student]), 200
+        return stringify([current_student]), HTTPCode.OK
     
     elif request.method == 'PUT':
         # Replace student with given object
@@ -60,6 +61,7 @@ async def student_function(id):
         surname = form.get('surname')
         alps = int(form.get('alps'))
         await db.execute("UPDATE student SET username = $1, forename = $2, surname = $3, alps = $4", username, forename, surname, alps)
+        return '', HTTPCode.OK
     
     elif request.method == 'PATCH':
         # Update given student
@@ -75,7 +77,7 @@ async def student_function(id):
                 else:
                     raise ValueError # Raise ValueError if parameters are not valid
             except ValueError:
-                return 'ValueError', 400 # Return HTTP 400 Bad Request
+                return 'ValueError', HTTPCode.BADREQUEST
 
         if form.get('username'):
             await db.execute("UPDATE student SET username = $1 WHERE id = $2", form.get('username'), id)
@@ -86,13 +88,13 @@ async def student_function(id):
         if form.get('surname'):
             await db.execute("UPDATE student SET surname = $1 WHERE id = $2", form.get('surname'), id)
 
-        return '', 200
+        return '', HTTPCode.OK
     
     elif reqeust.method == 'DELETE':
         # Delete given student
         await db.execute("DELETE FROM student WHERE id = $1", id)
-        return '', 200
+        return '', HTTPCode.OK
     
 @bp.route('/error', methods = ['GET'])
 async def error():
-    return '', 401
+    return '', HTTPCode.UNAUTHORIZED

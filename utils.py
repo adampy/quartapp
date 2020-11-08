@@ -5,6 +5,14 @@ import asyncpg
 from hashlib import sha256
 from os import urandom
 
+class HTTPCode:
+    '''Enumeration that links HTTP code names to their integer equivalent.'''
+    OK = 200
+    CREATED = 201
+    BADREQUEST = 400
+    UNAUTHORIZED = 401
+    NOTFOUND = 404
+
 async def is_teacher_valid(username, password):
     '''Checks in the DB if the username + password combination exists. This is a function such that multiple routes can use this function.'''
     fetched = await current_app.config['db_handler'].fetchrow("SELECT id, password, salt FROM teacher WHERE username = $1", username)
@@ -32,7 +40,7 @@ def hash_func(raw, salt=None):
     return salt.hex(), hashed
 
 def stringify(data):
-    '''Wraps a 2D list of records, data, into <pre> tags ready for it to be displayed via HTML'''
+    '''Wraps a 2D list of records, data, into <pre> tags ready for it to be displayed via HTML.'''
     to_return = "<pre>"
     for record in data:
         to_return += ', '.join([str(x) for x in record])
@@ -40,7 +48,7 @@ def stringify(data):
     return to_return + "</pre>"
 
 def constant_time_string_check(given, actual):
-    '''A constant time string check that prevents timing attacks'''
+    '''A constant time string check that prevents timing attacks.'''
     result = False
     for i in range(len(given)):
         try:

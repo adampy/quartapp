@@ -6,10 +6,13 @@ from csv import reader
 import os
 from utils import DatabaseHandler
 
+# TODO: Test teacher routes
 # TODO: Get student methods - perhaps a studentmanager class
 # TODO: Validate inputs for students
 # TODO: Try and except for database inputs - move try and except into DatabaseHandler methods
 # TODO: Route validation to ensure that all /<id> routes have integer ID
+# TODO: Try/Except for ensuring PUT requests have all data necessary
+# TODO: PATCH Command SQL writer so that it is all one SQL statement
 
 try:
     with open("credentials.csv", 'r') as f:
