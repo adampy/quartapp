@@ -13,6 +13,7 @@ from utils import DatabaseHandler
 # TODO: Route validation to ensure that all /<id> routes have integer ID
 # TODO: Try/Except for ensuring PUT requests have all data necessary
 # TODO: PATCH Command SQL writer so that it is all one SQL statement
+# TODO: Ensure that salts are unique across student and teacher tables
 
 try:
     with open("credentials.csv", 'r') as f:
