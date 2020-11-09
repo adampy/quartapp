@@ -1,6 +1,7 @@
 ﻿from quart import Blueprint, request, current_app
 import asyncpg
-from utils import hash_func, is_student_valid, stringify, HTTPCode
+from utils import hash_func, is_student_valid, stringify, auth_needed # Functions
+from utils import HTTPCode, AuthType # Enumeratons
 
 bp = Blueprint("student", __name__, url_prefix = "/student")
 
@@ -15,31 +16,34 @@ async def auth():
     else:
         return '', HTTPCode.UNAUTHORIZED
 
-@bp.route('/', methods = ['GET', 'POST'])
-async def main_route():
+@bp.route('/', methods = ['GET'])
+@auth_needed(AuthType.ANY)
+async def get_students():
     '''/student route.'''
+    db = current_app.config['db_handler'] 
+    data = await db.fetch("SELECT * FROM student ORDER BY id;")
+    if not data:
+        return '', 404
+    return stringify(data), 200
+
+@bp.route('/', methods = ['POST'])
+@auth_needed(AuthType.TEACHER)
+async def new_student():
     db = current_app.config['db_handler']
-
-    if request.method == 'GET': # Get all students
-        data = await db.fetch("SELECT * FROM student ORDER BY id;")
-        return stringify(data)
-
-    elif request.method == 'POST': # Create a new student
-        data = await request.form
-        params = [data['forename'], data['surname'], data['username'], int(data['alps'])]
+    data = await request.form
+    params = [data['forename'], data['surname'], data['username'], int(data['alps'])]
         
-        if data.get('password'):
-            salt, hashed = hash_func(data['password']) # Function that hashes a password
-            params.append(hashed)
-            params.append(salt)
-        else: # Following code run if password not given, set password fields to NULL
-            params.append(None)
-            params.append(None)
+    if data.get('password'):
+        salt, hashed = hash_func(data['password']) # Function that hashes a password
+        params.append(hashed)
+        params.append(salt)
+    else: # Following code run if password not given, set password fields to NULL
+        params.append(None)
+        params.append(None)
 
-        await db.execute("INSERT INTO student (forename, surname, username, alps, password, salt) VALUES ($1, $2, $3, $4, $5, $6)", *params)
-        student_obj = await db.fetchrow("SELECT * FROM student WHERE username = $1", data['username'])
-        return stringify([student_obj]), HTTPCode.CREATED
-        
+    await db.execute("INSERT INTO student (forename, surname, username, alps, password, salt) VALUES ($1, $2, $3, $4, $5, $6)", *params)
+    student_obj = await db.fetchrow("SELECT * FROM student WHERE username = $1", data['username'])
+    return stringify([student_obj]), HTTPCode.CREATED
 
 @bp.route('/<id>', methods = ['GET', 'PUT', 'PATCH', 'DELETE'])
 async def student_function(id):
@@ -96,5 +100,6 @@ async def student_function(id):
         return '', HTTPCode.OK
     
 @bp.route('/error', methods = ['GET'])
+@auth_needed(AuthType.STUDENT)
 async def error():
-    return '', HTTPCode.UNAUTHORIZED
+    return '', HTTPCode.OK

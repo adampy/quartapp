@@ -14,6 +14,8 @@ from utils import DatabaseHandler
 # TODO: Try/Except for ensuring PUT requests have all data necessary
 # TODO: PATCH Command SQL writer so that it is all one SQL statement
 # TODO: Ensure that salts are unique across student and teacher tables
+# TODO: Cache authentication details
+# TODO: Move DB stuff oustide fo utils.py
 
 try:
     with open("credentials.csv", 'r') as f:

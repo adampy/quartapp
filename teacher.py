@@ -41,7 +41,7 @@ async def main_route():
             return '', HTTPCode.UNAUTHORIZED
 
 @bp.route("/<id>", methods = ["GET", "PUT", "PATCH"])
-async def teacher_function():
+async def teacher_function(id):
     '''Function defining functionality for a specific teacher.'''
     data = await request.form
     db = current_app.config['db_handler']
@@ -49,14 +49,14 @@ async def teacher_function():
 
     if request.method == "GET":
         data = await db.fetchrow("SELECT * FROM teacher WHERE id = $1", id)
-        return stringify(data), HTTPCode.OK
+        return stringify([data]), HTTPCode.OK
 
     elif request.method == "PUT":
-        forename = data.get("username")
+        forename = data.get("forename")
         surname = data.get("surname")
         title = data.get("title")
         username = data.get("username")
-        await db.execute("UPDATE teacher SET forname = $1, surname = $2, title = $3, username = $4 WHERE id = $5", forename, surname, title, username, id)
+        await db.execute("UPDATE teacher SET forename = $1, surname = $2, title = $3, username = $4 WHERE id = $5", forename, surname, title, username, id)
         return '', HTTPCode.OK
 
     elif request.method == "PATCH":

@@ -4,6 +4,9 @@ import asyncio
 import asyncpg
 from hashlib import sha256
 from os import urandom
+import base64
+from functools import wraps
+import binascii # Used to catch exceptions when converting from Base64
 
 class HTTPCode:
     '''Enumeration that links HTTP code names to their integer equivalent.'''
@@ -13,9 +16,65 @@ class HTTPCode:
     UNAUTHORIZED = 401
     NOTFOUND = 404
 
+class AuthType:
+    '''Enumeration that links integers to auth types. This is solely used for abstraction.'''
+    NONE = 0
+    STUDENT = 1
+    TEACHER = 2
+    ANY = 3 # Any implies teacher or student authentication is sufficient
+
+def get_auth_details(request):
+    '''Utility function that gets the username and password from a request. Returns `username, password`.'''
+    header = request.headers.get('Authorization')
+    if not header:
+        return False
+
+    try:
+        auth = base64.b64decode(header).decode('utf-8')
+        username, password = auth.split(':')
+        return username, password
+    
+    except binascii.Error: # Runs if the Authorization header is Base64 compliant
+        return False
+
+def auth_needed(authentication: AuthType):
+    '''A decorator / wrapper that continues with the wrapped function if correct authentication is given.'''
+    def auth(f):
+        @wraps(f)
+        async def decorated_function(*args, **kwargs):
+            details = get_auth_details(request)
+            if not details:
+                return '', 400
+            
+            username, password = details # Unpacking tuple
+            authenticated = False
+
+            if authentication == AuthType.NONE:
+                authenticated = True
+            elif authentication == AuthType.TEACHER:
+                authenticated = await is_teacher_valid(username, password)
+            elif authentication == AuthType.STUDENT:
+                authenticated = await is_student_valid(username, password)
+            elif authentication == AuthType.ANY:
+                authenticated = await is_student_valid(username, password) or await is_teacher_valid(username, password)
+            else:
+                raise ValueError("`authentication` is a neccessary argument") # Code to prevent me from forgetting the authentication argument
+
+            if authenticated:
+                return await f(*args, **kwargs)
+            else:
+                return '', HTTPCode.UNAUTHORIZED
+            
+            
+            
+        return decorated_function
+    return auth
+
 async def is_teacher_valid(username, password):
     '''Checks in the DB if the username + password combination exists. This is a function such that multiple routes can use this function.'''
     fetched = await current_app.config['db_handler'].fetchrow("SELECT id, password, salt FROM teacher WHERE username = $1", username)
+    if not fetched:
+        return False # No teacher found with that username
     salt = bytearray.fromhex(fetched[2])
     if hash_func(password, salt)[1] == fetched[1]:
         return fetched[0] # Returns the ID if a student is valid
@@ -25,6 +84,8 @@ async def is_teacher_valid(username, password):
 async def is_student_valid(username, password):
     '''Checks in the DB if the username + password combination exists. This is a function such that multiple routes can use this function.'''
     fetched = await current_app.config['db_handler'].fetchrow("SELECT id, password, salt FROM student WHERE username = $1", username)
+    if not fetched:
+        return False # No student found with that username
     salt = bytearray.fromhex(fetched[2])
     if hash_func(password, salt)[1] == fetched[1]:
         return fetched[0] # Returns the ID if a student is valid
@@ -78,11 +139,11 @@ Having my own class which uses composition also allows me to be more flexible, a
         async with self.pool.acquire() as connection:
             async with connection.transaction():
                 to_return = await connection.fetch(sql, *params)
-        return to_return
+        return (to_return if to_return else [])
 
     async def fetchrow(self, sql, *params):
         data = await self.fetch(sql, *params)
-        return data[0]
+        return (data[0] if data else [])
 
     async def execute(self, sql, *params):
         async with self.pool.acquire() as connection:
