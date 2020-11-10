@@ -1,6 +1,7 @@
 ﻿from quart import Blueprint, request, current_app
 import asyncpg
-from utils import hash_func, stringify, is_admin_code_valid, is_teacher_valid, HTTPCode
+from utils import hash_func, stringify, is_admin_code_valid, is_teacher_valid # Functions
+from utils import HTTPCode, Auth # Enumerations
 
 bp = Blueprint("teacher", __name__, url_prefix = "/teacher")
 

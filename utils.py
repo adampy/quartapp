@@ -16,7 +16,7 @@ class HTTPCode:
     UNAUTHORIZED = 401
     NOTFOUND = 404
 
-class AuthType:
+class Auth:
     '''Enumeration that links integers to auth types. This is solely used for abstraction.'''
     NONE = 0
     STUDENT = 1
@@ -24,38 +24,37 @@ class AuthType:
     ANY = 3 # Any implies teacher or student authentication is sufficient
 
 def get_auth_details(request):
-    '''Utility function that gets the username and password from a request. Returns `username, password`.'''
+    '''Utility function that gets the username and password from a request.
+Returns `username, password` or False if the request doesn't contain properly formatted Authorization header.'''
     header = request.headers.get('Authorization')
     if not header:
         return False
-
     try:
         auth = base64.b64decode(header).decode('utf-8')
         username, password = auth.split(':')
         return username, password
-    
     except binascii.Error: # Runs if the Authorization header is Base64 compliant
         return False
 
-def auth_needed(authentication: AuthType):
+def auth_needed(authentication: Auth):
     '''A decorator / wrapper that continues with the wrapped function if correct authentication is given.'''
     def auth(f):
         @wraps(f)
         async def decorated_function(*args, **kwargs):
             details = get_auth_details(request)
             if not details:
-                return '', 400
+                return '', 400 # Improperly formatted Authorization header.
             
             username, password = details # Unpacking tuple
             authenticated = False
 
-            if authentication == AuthType.NONE:
+            if authentication == Auth.NONE:
                 authenticated = True
-            elif authentication == AuthType.TEACHER:
+            elif authentication == Auth.TEACHER:
                 authenticated = await is_teacher_valid(username, password)
-            elif authentication == AuthType.STUDENT:
+            elif authentication == Auth.STUDENT:
                 authenticated = await is_student_valid(username, password)
-            elif authentication == AuthType.ANY:
+            elif authentication == Auth.ANY:
                 authenticated = await is_student_valid(username, password) or await is_teacher_valid(username, password)
             else:
                 raise ValueError("`authentication` is a neccessary argument") # Code to prevent me from forgetting the authentication argument
@@ -64,9 +63,6 @@ def auth_needed(authentication: AuthType):
                 return await f(*args, **kwargs)
             else:
                 return '', HTTPCode.UNAUTHORIZED
-            
-            
-            
         return decorated_function
     return auth
 
@@ -121,31 +117,3 @@ def constant_time_string_check(given, actual):
 def is_admin_code_valid(code):
     '''Layer of abstraction to the admin code checking process'''
     return constant_time_string_check(code, environ.get("ADMIN"))
-
-class DatabaseHandler:
-    '''A class that is mainly used to reduce the amount of writing multiple async with statements everytime a DB connection is needed.
-Having my own class which uses composition also allows me to be more flexible, and means I can add implementation when necessary.'''
-    @classmethod
-    async def create(cls, *args):
-        self = DatabaseHandler()
-        self.pool = await asyncpg.create_pool(environ['DATABASE_URL'] + "?sslmode=require", max_size=20)
-        return self
-
-    async def create_student(self, student):
-        print(student)
-        
-    async def fetch(self, sql, *params):
-        to_return = None
-        async with self.pool.acquire() as connection:
-            async with connection.transaction():
-                to_return = await connection.fetch(sql, *params)
-        return (to_return if to_return else [])
-
-    async def fetchrow(self, sql, *params):
-        data = await self.fetch(sql, *params)
-        return (data[0] if data else [])
-
-    async def execute(self, sql, *params):
-        async with self.pool.acquire() as connection:
-            async with connection.transaction():
-                await connection.execute(sql, *params)

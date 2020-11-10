@@ -4,7 +4,7 @@ import asyncpg
 import asyncio
 from csv import reader
 import os
-from utils import DatabaseHandler
+from database import DatabaseHandler
 
 # TODO: Test teacher routes
 # TODO: Get student methods - perhaps a studentmanager class
