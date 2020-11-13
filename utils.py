@@ -7,6 +7,7 @@ from os import urandom
 import base64
 from functools import wraps
 import binascii # Used to catch exceptions when converting from Base64
+from datetime import datetime
 
 class HTTPCode:
     '''Enumeration that links HTTP code names to their integer equivalent.'''
@@ -22,6 +23,7 @@ class Auth:
     STUDENT = 1
     TEACHER = 2
     ANY = 3 # Any implies teacher or student authentication is sufficient
+    ADMIN = 4 # Implies teacher authentication or admin code needed
 
 def get_auth_details(request):
     '''Utility function that gets the username and password from a request.
@@ -56,6 +58,9 @@ def auth_needed(authentication: Auth):
                 authenticated = await is_student_valid(username, password)
             elif authentication == Auth.ANY:
                 authenticated = await is_student_valid(username, password) or await is_teacher_valid(username, password)
+            elif authentication == Auth.ADMIN:
+                admin_code_given = await request.form.data.get("admin")
+                authenticated = is_admin_code_valid(admin_code_given) or await is_teacher_valid(username, password)
             else:
                 raise ValueError("`authentication` is a neccessary argument") # Code to prevent me from forgetting the authentication argument
 
@@ -68,29 +73,65 @@ def auth_needed(authentication: Auth):
 
 async def is_teacher_valid(username, password):
     '''Checks in the DB if the username + password combination exists. This is a function such that multiple routes can use this function.'''
+    cache_obj = current_app.config['cache']
+    cache = cache_obj.teachers
+    if username in cache and cache[username]:
+        cache[username][1] = datetime.now()
+        return True
+    
+    # This code block runs if the teacher was not in the cache
     fetched = await current_app.config['db_handler'].fetchrow("SELECT id, password, salt FROM teacher WHERE username = $1", username)
-    if not fetched:
-        return False # No teacher found with that username
+    if not fetched: # If username does not exist
+        cache[username] = [False, datetime.now()] # Add username to cache
+        cache_obj.update_teacher()
+        return False
+    
     salt = bytearray.fromhex(fetched[2])
-    if hash_func(password, salt)[1] == fetched[1]:
-        return fetched[0] # Returns the ID if a student is valid
+    attempt = await hash_func(password, salt)
+    if attempt[1] == fetched[1]:
+        cache[username] = [True, datetime.now()] # Add username to cache
+        cache_obj.update_teacher()
+        return fetched[0] # Teacher is valid
     else:
+        cache[username] = [False, datetime.now()] # Add username to cache
+        cache_obj.update_teacher()
         return False
 
 async def is_student_valid(username, password):
     '''Checks in the DB if the username + password combination exists. This is a function such that multiple routes can use this function.'''
+    cache_obj = current_app.config['cache']
+    cache = current_app.config['cache'].students
+    if username in cache and cache[username][0]: # Checks the boolean whether the username is valid or not
+        cache[username][1] = datetime.now()
+        return True
+    
     fetched = await current_app.config['db_handler'].fetchrow("SELECT id, password, salt FROM student WHERE username = $1", username)
     if not fetched:
+        cache[username] = [False, datetime.now()] # Add username to cache
+        cache_obj.update_student()
         return False # No student found with that username
+    
     salt = bytearray.fromhex(fetched[2])
-    if hash_func(password, salt)[1] == fetched[1]:
-        return fetched[0] # Returns the ID if a student is valid
+    attempt = await hash_func(password, salt)
+    if attempt[1] == fetched[1]:
+        cache[username] = [True, datetime.now()] # Add username, and ID to cache
+        cache_obj.update_student()
+        return True # Student is valid
     else:
+        cache[username] = [False, datetime.now()] # Add username to cache
+        cache_obj.update_student()
         return False
 
-def hash_func(raw, salt=None):
+async def hash_func(raw, salt=None):
     '''Hashes a password, `raw`. A salt can be provided or if not its automatically created.'''
-    if not salt: salt = urandom(16) # Generate a 16 byte salt - this means a length of 32 when converted into hex
+    if not salt:
+        while True:
+            salt = urandom(16) # Generate a 16 byte salt - this means a length of 32 when converted into hex
+            taken = await current_app.config['db_handler'].fetchval("""
+SELECT EXISTS (SELECT * FROM (SELECT salt FROM student UNION SELECT salt FROM teacher) AS U WHERE U.salt = $1);""", salt.hex()) # Ensures the salt is unique
+            if not taken:
+                break
+
     password = bytes(raw, 'utf-8') # Convert password to bytes
     to_hash = bytearray(password + salt) # Salt has been appended to the password
     hashed = sha256(to_hash).hexdigest() # Apply the hash

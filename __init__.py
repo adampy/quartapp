@@ -4,18 +4,18 @@ import asyncpg
 import asyncio
 from csv import reader
 import os
-from database import DatabaseHandler
+from database import DatabaseHandler, Cache
 
 # TODO: Test teacher routes
-# TODO: Get student methods - perhaps a studentmanager class
+# TODO: Test PATCH routes
+# TODO: Test cache limits
+# TODO: Test new hash_func - ensuring the salt is unique
+
 # TODO: Validate inputs for students
 # TODO: Try and except for database inputs - move try and except into DatabaseHandler methods
-# TODO: Route validation to ensure that all /<id> routes have integer ID
+# TODO: Route validation to ensure that all /<param> routes have integer ID when NOT ?username=True
 # TODO: Try/Except for ensuring PUT requests have all data necessary
 # TODO: PATCH Command SQL writer so that it is all one SQL statement
-# TODO: Ensure that salts are unique across student and teacher tables
-# TODO: Cache authentication details
-# TODO: Move DB stuff oustide fo utils.py
 
 try:
     with open("credentials.csv", 'r') as f:
@@ -34,6 +34,7 @@ def create_app():
     @app.before_serving
     async def on_startup():
         app.config['db_handler'] = await DatabaseHandler.create()
+        app.config['cache'] = Cache()
 
     return app
 
