@@ -30,28 +30,3 @@ Having my own class which uses composition also allows me to be more flexible, a
         async with self.pool.acquire() as connection:
             async with connection.transaction():
                 await connection.execute(sql, *params)
-
-class Cache:
-    def __init__(self):
-        self.students = {}
-        self.teachers = {}
-
-    def update_student(self):
-        '''Removes the oldest item form the student cache when the cache size is greater than 16.'''
-        if len(self.students) > 16:
-            smallest_key = None
-            for key in self.students:
-                if smallest_key == None or self.students[key] < self.students[smallest_key]:
-                    smallest_key = key
-
-            del self.students[key]
-
-    def update_teacher(self):
-        '''Removes the oldest item form the teacher cache when the cache size is greater than 16.'''
-        if len(self.teacher) > 16:
-            smallest_key = None
-            for key in self.teacher:
-                if smallest_key == None or self.teacher[key] < self.teacher[smallest_key]:
-                    smallest_key = key
-
-            del self.teacher[key]

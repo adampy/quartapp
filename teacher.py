@@ -1,7 +1,7 @@
 ﻿from quart import Blueprint, request, current_app
-import asyncpg
-from utils import hash_func, stringify, is_admin_code_valid, is_teacher_valid, auth_needed # Functions
-from utils import HTTPCode, Auth # Enumerations
+from utils import stringify, is_admin_code_valid # Functions
+from utils import HTTPCode
+from auth import Auth, auth_needed, hash_func
 
 bp = Blueprint("teacher", __name__, url_prefix = "/teacher")
 
@@ -9,9 +9,10 @@ bp = Blueprint("teacher", __name__, url_prefix = "/teacher")
 @auth_needed(Auth.NONE)
 async def auth():
     '''The route that the client uses to log a user in.'''
+    teacher_manager = current_app.config['teacher_manager']
     data = await request.form
     username, password = data['username'], data['password']
-    if await is_teacher_valid(username, password):
+    if await teacher_manager.is_teacher_valid(username, password):
         return '', HTTPCode.OK
     else:
         return '', HTTPCode.UNAUTHORIZED
@@ -21,10 +22,12 @@ async def auth():
 async def get_teachers():
     '''/teacher route'''
     data = await current_app.config['db_handler'].fetch("SELECT * FROM teacher;")
-    return stringify(data)
+    if not data:
+        return '', HTTPCode.NOTFOUND
+    return stringify(data), HTTPCode.OK
 
 @bp.route("/", methods = ["POST"])
-@auth_needed(Auth.ADMIN)
+@auth_needed(Auth.ADMIN) # Pass obj will return the Admin code here
 async def create_teacher():
     '''Creates a new teacher.'''
     db = current_app.config['db_handler']
@@ -79,7 +82,7 @@ async def patch_teacher(id):
     '''PATCH teacher'''
     if data.get('password'):
         salt, hashed = await hash_func(form.get('password')) # Password has been given, now update the salt and password fields
-        await db.execute("UPDATE student SET salt = $1, password = $2 WHERE id = $3", salt, hashed, id)
+        await db.execute("UPDATE teacher SET salt = $1, password = $2 WHERE id = $3", salt, hashed, id)
         
     if data.get("username"):
         await db.execute("UPDATE teacher SET username = $1 WHERE id = $2", data.get("username"), id)

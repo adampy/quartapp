@@ -1,16 +1,18 @@
 ﻿from quart import Quart
-import student, teacher
+import student, teacher, group
 import asyncpg
 import asyncio
 from csv import reader
 import os
-from database import DatabaseHandler, Cache
+from database import DatabaseHandler
+from managers import StudentManager, TeacherManager
 
 # TODO: Test teacher routes
-# TODO: Test PATCH routes
 # TODO: Test cache limits
-# TODO: Test new hash_func - ensuring the salt is unique
+# TODO: Test student PUT route
 
+# TODO: Username unique -> when not unique return a 400
+# TODO: Remove students from cache when they are updated
 # TODO: Validate inputs for students
 # TODO: Try and except for database inputs - move try and except into DatabaseHandler methods
 # TODO: Route validation to ensure that all /<param> routes have integer ID when NOT ?username=True
@@ -30,11 +32,13 @@ def create_app():
     app = Quart(__name__)
     app.register_blueprint(student.bp)
     app.register_blueprint(teacher.bp)
+    app.register_blueprint(group.bp)
 
     @app.before_serving
     async def on_startup():
         app.config['db_handler'] = await DatabaseHandler.create()
-        app.config['cache'] = Cache()
+        app.config['student_manager'] = StudentManager()
+        app.config['teacher_manager'] = TeacherManager()
 
     return app
 
