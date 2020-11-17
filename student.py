@@ -8,7 +8,7 @@ bp = Blueprint("student", __name__, url_prefix = "/student")
 @bp.route('/auth', methods=['POST'])
 @auth_needed(Auth.NONE)
 async def auth():
-    '''The route that the client uses to verify credentials.'''
+    """The route that the client uses to verify credentials."""
     student_manager = current_app.config['student_manager']
     data = await request.form
     username, password = data['username'], data['password']
@@ -21,7 +21,7 @@ async def auth():
 @bp.route('/password_reset', methods = ['POST'])
 @auth_needed(Auth.NONE)
 async def password_reset():
-    '''Route that can only be used if your password has been changed.'''
+    """Route that can only be used if your password has been changed."""
     form = await request.form
     username = form.get("username")
     current_app.config['student_manager'].cache.remove(username)
@@ -38,7 +38,7 @@ async def password_reset():
 @bp.route('/', methods = ['GET'])
 @auth_needed(Auth.ANY)
 async def get_students():
-    '''/student route.'''
+    """/student route."""
     students = current_app.config['student_manager']
     data = await students.get_all()
     if not data:
@@ -60,7 +60,7 @@ async def new_student():
 @bp.route('/', methods = ['PATCH'])
 @auth_needed(Auth.STUDENT, provide_obj = True)
 async def patch_student(auth_obj):
-    '''PATCH STUDENT (Student editing their own account)'''
+    """PATCH STUDENT (Student editing their own account)"""
     form = await request.form
     student_manager = current_app.config['student_manager']
     student_manager.cache.remove(auth_obj.username)
@@ -82,7 +82,7 @@ async def patch_student(auth_obj):
 @bp.route('/<param>', methods = ['GET'])
 @auth_needed(Auth.ANY)
 async def get_student(param):
-    '''GET STUDENT'''
+    """GET STUDENT"""
     students = current_app.config['student_manager']
     username = request.args.get("username")
     current_student = False
@@ -100,7 +100,7 @@ async def get_student(param):
 @bp.route('/<id>', methods = ['PUT'])
 @auth_needed(Auth.TEACHER)
 async def put_student(id):
-    '''PUT STUDENT'''
+    """PUT STUDENT"""
     form = await request.form
     students = current_app.config['student_manager']
     current_student = await students.get(id = int(id))
@@ -125,7 +125,7 @@ async def put_student(id):
 @bp.route('/<id>', methods = ['PATCH'])
 @auth_needed(Auth.TEACHER)
 async def teacher_patch_student(id):
-    '''PATCH STUDENT'''
+    """PATCH STUDENT"""
     form = await request.form
     students = current_app.config['student_manager']
     student = await students.get(id = int(id))
@@ -159,7 +159,7 @@ async def teacher_patch_student(id):
 @bp.route('/<id>', methods = ['DELETE'])
 @auth_needed(Auth.TEACHER)
 async def delete_student(id):
-    '''DELETE STUDENT'''
+    """DELETE STUDENT"""
     id = int(id)
     await current_app.config['student_manager'].delete(id)
     return '', HTTPCode.OK

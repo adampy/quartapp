@@ -3,8 +3,8 @@ from os import environ
 from datetime import datetime
 
 class DatabaseHandler:
-    '''A class that is mainly used to reduce the amount of writing multiple async with statements everytime a DB connection is needed.
-Having my own class which uses composition also allows me to be more flexible, and means I can add implementation when necessary.'''
+    """A class that is mainly used to reduce the amount of writing multiple async with statements everytime a DB connection is needed.
+Having my own class which uses composition also allows me to be more flexible, and means I can add implementation when necessary."""
 
     @classmethod
     async def create(cls, *args):

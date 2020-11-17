@@ -8,7 +8,7 @@ bp = Blueprint("teacher", __name__, url_prefix = "/teacher")
 @bp.route('/auth', methods=['POST'])
 @auth_needed(Auth.NONE)
 async def auth():
-    '''The route that the client uses to log a user in.'''
+    """The route that the client uses to log a user in."""
     teacher_manager = current_app.config['teacher_manager']
     data = await request.form
     username, password = data['username'], data['password']
@@ -20,7 +20,7 @@ async def auth():
 @bp.route("/", methods = ["GET"])
 @auth_needed(Auth.ANY)
 async def get_teachers():
-    '''/teacher route'''
+    """/teacher route"""
     data = await current_app.config['db_handler'].fetch("SELECT * FROM teacher;")
     if not data:
         return '', HTTPCode.NOTFOUND
@@ -29,7 +29,7 @@ async def get_teachers():
 @bp.route("/", methods = ["POST"])
 @auth_needed(Auth.ADMIN) # Pass obj will return the Admin code here
 async def create_teacher():
-    '''Creates a new teacher.'''
+    """Creates a new teacher."""
     db = current_app.config['db_handler']
 
     data = await request.form
@@ -45,7 +45,7 @@ async def create_teacher():
 @bp.route('/<param>', methods = ['GET'])
 @auth_needed(Auth.ANY)
 async def get_teacher(param):
-    '''GET teacher'''
+    """GET teacher"""
     username = request.args.get("username")
     db = current_app.config['db_handler']
     sql = ""
@@ -64,7 +64,7 @@ async def get_teacher(param):
 @bp.route("/<id>", methods = ["PUT"])
 @auth_needed(Auth.ADMIN)
 async def put_teacher(id):
-    '''PUT teacher'''
+    """PUT teacher"""
     data = await request.form
     db = current_app.config['db_handler']
     id = int(id)
@@ -79,7 +79,7 @@ async def put_teacher(id):
 @bp.route("/<id>", methods = ["PATCH"])
 @auth_needed(Auth.TEACHER)
 async def patch_teacher(id):
-    '''PATCH teacher'''
+    """PATCH teacher"""
     if data.get('password'):
         salt, hashed = await hash_func(form.get('password')) # Password has been given, now update the salt and password fields
         await db.execute("UPDATE teacher SET salt = $1, password = $2 WHERE id = $3", salt, hashed, id)

@@ -7,7 +7,7 @@ import binascii # Used to catch exceptions when converting from Base64
 from utils import HTTPCode, is_admin_code_valid
 
 class Auth:
-    '''Enumeration that links integers to auth types. This is solely used for abstraction.'''
+    """Enumeration that links integers to auth types. This is solely used for abstraction."""
     NONE = 0
     STUDENT = 1
     TEACHER = 2
@@ -15,8 +15,8 @@ class Auth:
     ADMIN = 4 # Implies teacher authentication or admin code needed
 
 def get_auth_details(request):
-    '''Utility function that gets the username and password from a request.
-Returns `username, password` or False if the request doesn't contain properly formatted Authorization header.'''
+    """Utility function that gets the username and password from a request.
+Returns `username, password` or False if the request doesn't contain properly formatted Authorization header."""
     header = request.headers.get('Authorization')
     if not header:
         return False
@@ -28,7 +28,7 @@ Returns `username, password` or False if the request doesn't contain properly fo
         return False
 
 def auth_needed(authentication: Auth, provide_obj: bool = False):
-    '''A decorator / wrapper that continues with the wrapped function if correct authentication is given.'''
+    """A decorator / wrapper that continues with the wrapped function if correct authentication is given."""
     def auth(f):
         @wraps(f)
         async def decorated_function(*args, **kwargs):
@@ -71,7 +71,7 @@ def auth_needed(authentication: Auth, provide_obj: bool = False):
     return auth
 
 async def hash_func(raw, salt=None):
-    '''Hashes a password, `raw`. A salt can be provided or if not its automatically created.'''
+    """Hashes a password, `raw`. A salt can be provided or if not its automatically created."""
     if not salt:
         while True:
             salt = urandom(16) # Generate a 16 byte salt - this means a length of 32 when converted into hex

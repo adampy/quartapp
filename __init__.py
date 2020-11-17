@@ -28,7 +28,7 @@ except FileNotFoundError:
     pass
 
 def create_app():
-    '''This subroutine creates the Quart app and returns it. The DB is also connected in this step.'''
+    """This subroutine creates the Quart app and returns it. The DB is also connected in this step."""
     app = Quart(__name__)
     app.register_blueprint(student.bp)
     app.register_blueprint(teacher.bp)
