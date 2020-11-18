@@ -85,7 +85,7 @@ async def get_student(param):
     """GET STUDENT"""
     students = current_app.config['student_manager']
     username = request.args.get("username")
-    current_student = False
+    current_student = None
 
     if username:
         current_student = await students.get(username = username)

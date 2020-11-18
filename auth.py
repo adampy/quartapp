@@ -71,7 +71,8 @@ def auth_needed(authentication: Auth, provide_obj: bool = False):
     return auth
 
 async def hash_func(raw, salt=None):
-    """Hashes a password, `raw`. A salt can be provided or if not its automatically created."""
+    """Hashes a password, `raw`. A salt can be provided or if not its automatically created.
+Returns (salt, hashed)"""
     if not salt:
         while True:
             salt = urandom(16) # Generate a 16 byte salt - this means a length of 32 when converted into hex
