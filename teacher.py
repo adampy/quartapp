@@ -28,10 +28,10 @@ async def get_teachers():
     return stringify(teachers), HTTPCode.OK
 
 @bp.route("/", methods = ["PATCH"]) #DONE
-@auth_needed(Auth.TEACEHR, provide_obj = True)
+@auth_needed(Auth.TEACHER, provide_obj = True)
 async def patch_own_teacher(self, auth_obj):
     form = await request.form
-    updated = auth_obj
+    teacher = auth_obj # Teacher is the old teacher object
     teachers = current_app.config['teacher_manager']
 
     # GET DATA FROM FORM AND UPDATE TEACHER IF GIVEN
@@ -51,9 +51,9 @@ async def patch_own_teacher(self, auth_obj):
     
     # UPDATE DB
     if form.get('password'): # If password needs changing
-        await teachers.update(original, teacher, new_password = form.get('password'))
+        await teachers.update(auth_obj, teacher, new_password = form.get('password'))
     else:
-        await teachers.update(original, teacher)
+        await teachers.update(auth_obj, teacher)
     return '', HTTPCode.OK
 
 @bp.route("/", methods = ["POST"]) #DONE
@@ -107,7 +107,7 @@ async def put_teacher(id):
         to_update.surname = surname
         to_update.title = title
 
-    await students.update(current_teacher, to_update)
+    await teachers.update(current_teacher, to_update)
     return '', HTTPCode.OK
     
 @bp.route("/<id>", methods = ["PATCH"]) #DONE

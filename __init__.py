@@ -12,12 +12,10 @@ from managers import StudentManager, TeacherManager
 # TODO: Test student PUT route
 
 # TODO: Username unique -> when not unique return a 400
-# TODO: Remove students from cache when they are updated
 # TODO: Validate inputs for students
 # TODO: Try and except for database inputs - move try and except into DatabaseHandler methods
 # TODO: Route validation to ensure that all /<param> routes have integer ID when NOT ?username=True
 # TODO: Try/Except for ensuring PUT requests have all data necessary
-# TODO: PATCH Command SQL writer so that it is all one SQL statement
 
 try:
     with open("credentials.csv", 'r') as f:
