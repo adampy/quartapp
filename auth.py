@@ -35,15 +35,16 @@ def auth_needed(authentication: Auth, provide_obj: bool = False):
             if authentication == Auth.NONE:
                 return await f(*args, **kwargs) # Return the function early such that no errors are raised when checking for user IDs
 
-            details = get_auth_details(request)
             student_manager = current_app.config['student_manager']
             teacher_manager = current_app.config['teacher_manager']
 
-            if not details:
-                return '', HTTPCode.BADREQUEST # Improperly formatted Authorization header.
-
-            username, password = details # Unpacking tuple
-            authenticated = False
+            username, password, authenticated = '', '', False
+            if authentication != Auth.ADMIN:
+                details = get_auth_details(request)
+                if not details:
+                    return '', HTTPCode.BADREQUEST # Improperly formatted Authorization header.
+                else:
+                    username, password = details # Unpacking tuple
 
             if authentication == Auth.TEACHER:
                 authenticated = await teacher_manager.is_teacher_valid(username, password)
@@ -54,10 +55,10 @@ def auth_needed(authentication: Auth, provide_obj: bool = False):
             elif authentication == Auth.ADMIN:
                 form = await request.form
                 admin = form.get("admin")
-                if not admin:
-                    authenticated = await teacher_manager.is_teacher_valid(username, password)
-                else:
+                if admin:
                     authenticated = is_admin_code_valid(admin)
+                else:
+                    authenticated = await teacher_manager.is_teacher_valid(username, password)
             else:
                 raise ValueError("`authentication` is a neccessary argument") # Code to prevent me from forgetting the authentication argument
 

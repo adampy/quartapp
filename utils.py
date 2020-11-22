@@ -30,5 +30,5 @@ def constant_time_string_check(given, actual):
     return result
         
 def is_admin_code_valid(code):
-    """Layer of abstraction to the admin code checking process"""
+    """Layer of abstraction to the admin code checking process."""
     return constant_time_string_check(code, environ.get("ADMIN"))

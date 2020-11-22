@@ -8,7 +8,7 @@ bp = Blueprint("teacher", __name__, url_prefix = "/teacher")
 @bp.route('/auth', methods=['POST']) #DONE
 @auth_needed(Auth.NONE)
 async def auth():
-    """The route that the client uses to log a user in."""
+    """The route that the client uses to verify credentials."""
     teacher_manager = current_app.config['teacher_manager']
     data = await request.form
     username, password = data['username'], data['password']
@@ -22,16 +22,16 @@ async def auth():
 @auth_needed(Auth.ANY)
 async def get_teachers():
     """/teacher route"""
-    teachers = await current_app.config['teacher_manager'].get_all()
+    teachers = await current_app.config['teacher_manager'].get()
     if not teachers:
         return '', HTTPCode.NOTFOUND
     return stringify(teachers), HTTPCode.OK
 
 @bp.route("/", methods = ["PATCH"]) #DONE
 @auth_needed(Auth.TEACHER, provide_obj = True)
-async def patch_own_teacher(self, auth_obj):
+async def patch_own_teacher(auth_obj):
     form = await request.form
-    teacher = auth_obj # Teacher is the old teacher object
+    teacher = auth_obj.make_copy()
     teachers = current_app.config['teacher_manager']
 
     # GET DATA FROM FORM AND UPDATE TEACHER IF GIVEN
@@ -92,7 +92,7 @@ async def put_teacher(id):
     form = await request.form
     teachers = current_app.config['teacher_manager']
     current_teacher = await teachers.get(id = int(id))
-    to_update = current_teacher # Make a new student which we can use to change student values for
+    to_update = current_teacher.make_copy() # Make a new teacher which we can use to change student values for
 
     # Replace student with given object
     username = form.get('username')
@@ -117,7 +117,7 @@ async def patch_teacher(id):
     form = await request.form
     teachers = current_app.config['teacher_manager']
     teacher = await teachers.get(id = int(id))
-    original = teacher # Store the teacher object
+    original = teacher.make_copy() # Make a new copy that we can edit
 
     # GET DATA FROM FORM AND UPDATE TEACHER IF GIVEN
     username = form.get('username') or None

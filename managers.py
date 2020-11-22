@@ -2,6 +2,7 @@
 from auth import hash_func, Auth
 from utils import HTTPCode
 from datetime import datetime
+from exceptions import UsernameTaken
 
 class Cache:
     def __init__(self, limit, *args, **kwargs):
@@ -37,9 +38,10 @@ class Cache:
         if out:
             self.times[key] = datetime.now() # Update last retrieval time
             return out
+        print(f"Cannot find {key} in {self.c}")
         return False
 
-class BaseUser:
+class AbstractBaseObject:
     def __init__(self, *args, **kwargs):
         self.data = []
     
@@ -52,12 +54,16 @@ class BaseUser:
     def __repr__(self):
         return self.__str__()
 
-class Student(BaseUser):
+    def make_copy(self):
+        '''Function that returns itself, but as a new copy'''
+        return self.create_from(self.data[:])
+
+class Student(AbstractBaseObject):
     """This class is just a structure of data, and does not have any methods"""
     @classmethod
-    def create_from(self, data: [], *args, **kwargs):
+    def create_from(cls, data: [], *args, **kwargs):
         """Data supplied must follow [id, forename, surname, username, salt, password, alps]."""
-        super().__init__(self)
+        super().__init__(cls)
         self = Student()
         self.data = data
         self.id = data[0]
@@ -69,12 +75,12 @@ class Student(BaseUser):
         self.alps = data[6]
         return self
 
-class Teacher(BaseUser):
+class Teacher(AbstractBaseObject):
     """This class is just a structure of data, and does not have any methods"""
     @classmethod
-    def create_from(self, data: [], *args, **kwargs):
+    def create_from(cls, data: [], *args, **kwargs):
         """Data supplied must follow: [id, forename, surname, username, title, password, salt]."""
-        super().__init__(self)
+        super().__init__(cls)
         self = Teacher()
         self.data = data
         self.id = data[0]
@@ -86,21 +92,61 @@ class Teacher(BaseUser):
         self.salt = data[6]
         return self
     
-class BaseUserManager:
-    """BaseUserManager implements, by default, a cache of size 16. `student` is a required boolean denoting if the sub-class is a student or not.
-BaseUserManager and all of its children work assuming that user authentication has been previously handled in the calling subroutines."""
-    def __init__(self, student, *args, **kwargs):
-        self.cache = Cache(16)
+class Group(AbstractBaseObject):
+    @classmethod
+    def create_from(cls, data: [], *args, **kwargs):
+        """Data supplied must follow: [id, teacher_id, name, subject]"""
+        super().__init__(cls)
+        self = Group()
+        self.data = data
+        self.id = data[0]
+        self.teacher_id = data[1]
+        self.name = data[2]
+        self.subject = data[3]
+        return self
+
+class AbstractBaseManager:
+    """This is an Abstract Base Class (ABC) that only contians references to the methods that need to be implemented by its children.
+    The four methods that need implementing are closely related to CRUD (Create, Retrieve, Update, Delete) and are:
+    create (C)
+    get (R)
+    update (U)
+    delete (D) """
+
+    def __init__(self, *args, **kwargs):
         self.db = current_app.config['db_handler']
-        self.is_student = student
-        self.is_teacher = not student
+
+    def create(self, *args, **kwargs):
+        pass
+
+    def get(self, *args, **kwargs):
+        pass
+
+    def update(self, *args, **kwargs):
+        pass
+
+    def delete(self, *args, **kwargs):
+        pass
+
+class AbstractUserManager(AbstractBaseManager):
+    """AbstractUserManager implements, by default, a cache of size 16. `student` is a required boolean denoting if the sub-class is a student or not.
+    AbstractUserManager and all of its children work assuming that user authentication has been previously handled in the calling subroutines."""
+    def __init__(self, student, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.cache = Cache(16)
         self.table_name = {True: 'student', False:'teacher'}[student] # This is not susseptible to attack (no user inputs)
         self.child_obj = {True: Student, False: Teacher}[student]
 
     async def get(self, id = -1, username = ""):
-        """Gets a user by ID or by Username. This method firstly checks the cache before querying the database."""
+        """Gets a user by ID or by Username, if neither are supplied then all users are returned.
+        This method firstly checks the cache before querying the database BUT cache is not checked when getting all students."""
         if id == -1 and username == "":
-            return False # Argument error
+            # Get all users
+            all = await self.db.fetch(f"SELECT * FROM {self.table_name} ORDER BY id;")
+            to_return = []
+            for user in all:
+                to_return.append(self.child_obj.create_from(user))
+            return to_return
 
         if id != -1:
             # Search by ID
@@ -112,7 +158,7 @@ BaseUserManager and all of its children work assuming that user authentication h
             if not data:
                 return False
             else:
-                user = child_obj.create_from(data)
+                user = self.child_obj.create_from(data)
                 self.cache.add(user.username, user)
                 return user
 
@@ -121,19 +167,11 @@ BaseUserManager and all of its children work assuming that user authentication h
             cached = self.cache.get(username)
             if not cached:
                 data = await self.db.fetchrow(f"SELECT * FROM {self.table_name} WHERE username = $1", username)
-                user = child_obj.create_from(data)
+                user = self.child_obj.create_from(data)
                 self.cache.add(username, user)
                 return user
             else:
                 return cached
-
-    async def get_all(self, *args, **kwargs):
-        """Returns an array of user objects."""
-        all = await self.db.fetch(f"SELECT * FROM {self.table_name} ORDER BY id DESC;")
-        to_return = []
-        for student in all:
-            to_return.append(self.child_obj.create_from(student))
-        return to_return
 
     async def delete(self, id, *args, **kwargs):
         """Delete a user object from the database."""
@@ -144,6 +182,7 @@ BaseUserManager and all of its children work assuming that user authentication h
         The function returns the user data object if the provided credentials are valid, else returns False."""
 
         # CHECK CACHE
+        print(f"{self.child_obj.__name__} cache: {self.cache.c}")
         cache_result = self.cache.get(username)
         if cache_result: # Checks whether the user appears in the cache
             salt_in = bytearray.fromhex(cache_result.salt)
@@ -168,29 +207,37 @@ BaseUserManager and all of its children work assuming that user authentication h
         else:
             return False
 
-class StudentManager(BaseUserManager):
+    async def is_username_taken(self, username):
+        """Returns True if the username is taken, and False if the username is not already taken."""
+        data = await self.db.fetchrow(f"SELECT EXISTS (SELECT username FROM {self.table_name} WHERE username = $1)", username)
+        return data.get("exists")
+
+class StudentManager(AbstractUserManager):
     def __init__(self, *args, **kwargs):
         super().__init__(True, *args, **kwargs)
 
     async def is_student_valid(self, username, password):
-        """An alias function for BaseUserManager.is_user_valid."""
+        """An alias function for AbstractUserManager.is_user_valid."""
         return await self.is_user_valid(username, password)
 
     async def create(self, forename, surname, username, alps, password = None):
         """Creates a student in the DB from the data given. If no password has been given then
-the database keeps the password and salt as null values."""
+        the database keeps the password and salt as null values."""
+        if self.is_username_taken(username):
+            raise UsernameTaken
+
         salt = None
         if password:
             salt, hashed = await hash_func(password) # Function that hashes a password
 
-        await self.db.execute("INSERT INTO student (forename, surname, username, alps, password, salt) VALUES ($1, $2, $3, $4, $5, $6)", forename, surname, username, alps, password, salt)
+        await self.db.execute("INSERT INTO student (forename, surname, username, alps, password, salt) VALUES ($1, $2, $3, $4, $5, $6)", forename, surname, username, alps, hashed, salt)
 
     async def update(self, current_student: Student, student: Student, reset_password = False, new_password = ''):
         """Updates a student object. This takes in 2 required args and 2 optional.
-current_student: Student (The current student object, provided by providing the wrapper (auth_needed) of the calling function with provide_obj = True)
-student: Student (The updated student object)
-reset_password = False (defaults to False, can be turned to True if the passwords needs resetting)
-new_password = '' (if a new password is given, it will be changed and a new salt is generated."""
+        current_student: Student (The current student object, provided by providing the wrapper (auth_needed) of the calling function with provide_obj = True)
+        student: Student (The updated student object)
+        reset_password = False (defaults to False, can be turned to True if the passwords needs resetting)
+        new_password = '' (if a new password is given, it will be changed and a new salt is generated."""
         self.cache.remove(current_student.username) # Remove from cache
 
         if reset_password: # Set password to None
@@ -202,17 +249,20 @@ new_password = '' (if a new password is given, it will be changed and a new salt
                 salt, hashed = await hash_func(new_password) # Function that hashes a password
                 await self.db.execute("UPDATE student SET forename = $1, surname = $2, username = $3, alps = $4, password = $5, salt = $6 WHERE id = $7", student.forename, student.surname, student.username, student.alps, hashed, salt, student.id)
 
-class TeacherManager(BaseUserManager):
+class TeacherManager(AbstractUserManager):
     def __init__(self, *args, **kwargs):
         super().__init__(False, *args, **kwargs)
 
     async def is_teacher_valid(self, username, password):
-        """An alias function for BaseUserManager.is_user_valid."""
+        """An alias function for AbstractUserManager.is_user_valid."""
         return await self.is_user_valid(username, password)
 
     async def create(self, forename, surname, username, title, password):
         """Creates a Teacher in the database. This procedure assumes that the admin code HAS been given AND is valid."""
-        salt, hashed = hash_func(password)
+        if self.is_username_taken(username):
+            raise UsernameTaken
+        
+        salt, hashed = await hash_func(password)
         await self.db.execute("INSERT INTO teacher (forename, surname, username, title, password, salt) VALUES ($1, $2, $3, $4, $5, $6)", forename, surname, username, title, hashed, salt)
 
     async def update(self, current_teacher: Teacher, teacher: Teacher, new_password = ''):
@@ -225,3 +275,25 @@ class TeacherManager(BaseUserManager):
             # New password
             salt, hashed = hash_func(new_password)
             await self.db.execute("UPDATE teacher SET forename = $1, surname = $2, username = $3, title = $4, password = $5, salt = $6 WHERE id = $7", teacher.forename, teacher.surname, teacher.username, teacher.title, hashed, salt, current_teacher.id)
+
+class GroupManager(AbstractBaseManager):
+    """Manager that controls the database when processing groups."""
+
+    async def get(self, id = -1):
+        """Gets all groups from the database. If the GroupID is not provided then it will return all groups."""
+        if id == -1:
+            # Get all groups
+            to_return = []
+            data = await self.db.fetch("SELECT * FROM group_tbl")
+            for group in data:
+                to_return.append(Group.create_from(group))
+            return to_return
+        else:
+            if id < 1:
+                return None
+            group = await self.db.fetchrow("SELECT * FROM group_tbl WHERE id = $1", id)
+            return Group.create_from(group)
+
+    async def create(self, teacher_id, name, subject):
+        """Creates a group from data given."""
+        await self.db.execute("INSERT INTO group_tbl (teacher_id, name, subject) VALUES ($1, $2, $3)", teacher_id, name, subject)

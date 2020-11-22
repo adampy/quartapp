@@ -2,6 +2,7 @@
 from utils import stringify # Functions
 from utils import HTTPCode # Enumeratons
 from auth import get_auth_details, hash_func, auth_needed, Auth
+from managers import Student
 
 bp = Blueprint("student", __name__, url_prefix = "/student")
 
@@ -40,7 +41,7 @@ async def password_reset():
 async def get_students():
     """/student route."""
     students = current_app.config['student_manager']
-    data = await students.get_all()
+    data = await students.get()
     if not data:
         return '', HTTPCode.NOTFOUND
     return stringify(data), HTTPCode.OK
@@ -63,8 +64,7 @@ async def patch_student(auth_obj):
     """PATCH STUDENT (Student editing their own account)"""
     form = await request.form
     student_manager = current_app.config['student_manager']
-    student_manager.cache.remove(auth_obj.username)
-    to_update = auth_obj # Gets the ID from the student auth given
+    to_update = auth_obj.make_copy()
 
     # Student is updating theirselves
     if form.get('username'):
@@ -104,7 +104,7 @@ async def put_student(id):
     form = await request.form
     students = current_app.config['student_manager']
     current_student = await students.get(id = int(id))
-    to_update = current_student # Make a new student which we can use to change student values for
+    to_update = current_student.make_copy() # Make a new student which we can use to change student values for
 
     # Replace student with given object
     username = form.get('username')
@@ -129,7 +129,7 @@ async def teacher_patch_student(id):
     form = await request.form
     students = current_app.config['student_manager']
     student = await students.get(id = int(id))
-    original = student # Store the student object
+    original = student.make_copy()
 
     # GET DATA FROM FORM AND UPDATE STUDENT IF GIVEN
     username = form.get('username') or None

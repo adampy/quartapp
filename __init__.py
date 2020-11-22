@@ -5,13 +5,13 @@ import asyncio
 from csv import reader
 import os
 from database import DatabaseHandler
-from managers import StudentManager, TeacherManager
+from managers import StudentManager, TeacherManager, GroupManager
 
 # TODO: Test teacher routes
 # TODO: Test cache limits
 # TODO: Test student PUT route
 
-# TODO: Username unique -> when not unique return a 400
+# TODO: Catch UsernameTaken exceptions
 # TODO: Validate inputs for students
 # TODO: Try and except for database inputs - move try and except into DatabaseHandler methods
 # TODO: Route validation to ensure that all /<param> routes have integer ID when NOT ?username=True
@@ -37,6 +37,7 @@ def create_app():
         app.config['db_handler'] = await DatabaseHandler.create()
         app.config['student_manager'] = StudentManager()
         app.config['teacher_manager'] = TeacherManager()
+        app.config['group_manager'] = GroupManager()
 
     return app
 
