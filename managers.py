@@ -167,6 +167,8 @@ class AbstractUserManager(AbstractBaseManager):
             cached = self.cache.get(username)
             if not cached:
                 data = await self.db.fetchrow(f"SELECT * FROM {self.table_name} WHERE username = $1", username)
+                if not data:
+                    return False
                 user = self.child_obj.create_from(data)
                 self.cache.add(username, user)
                 return user
@@ -285,6 +287,8 @@ class GroupManager(AbstractBaseManager):
             # Get all groups
             to_return = []
             data = await self.db.fetch("SELECT * FROM group_tbl")
+            if not data:
+                return False
             for group in data:
                 to_return.append(Group.create_from(group))
             return to_return
@@ -292,8 +296,18 @@ class GroupManager(AbstractBaseManager):
             if id < 1:
                 return None
             group = await self.db.fetchrow("SELECT * FROM group_tbl WHERE id = $1", id)
+            if not group:
+                return False
             return Group.create_from(group)
 
     async def create(self, teacher_id, name, subject):
         """Creates a group from data given."""
         await self.db.execute("INSERT INTO group_tbl (teacher_id, name, subject) VALUES ($1, $2, $3)", teacher_id, name, subject)
+    
+    async def delete(self, group_id):
+        """Deletes a group from the database using the group_id given."""
+        await self.db.execute("DELETE FROM group_tbl WHERE id = $1", group_id)
+
+    async def update(self, group: Group):
+        """Updates a group given by `group`. The group edited is the `group.id` and its new values are also stored in `group`."""
+        await self.db.execute("UPDATE group_tbl SET teacher_id = $1, subject = $2, name = $3 WHERE id = $4", group.teacher_id, group.subject, group.name, group.id)
