@@ -311,3 +311,16 @@ class GroupManager(AbstractBaseManager):
     async def update(self, group: Group):
         """Updates a group given by `group`. The group edited is the `group.id` and its new values are also stored in `group`."""
         await self.db.execute("UPDATE group_tbl SET teacher_id = $1, subject = $2, name = $3 WHERE id = $4", group.teacher_id, group.subject, group.name, group.id)
+
+    async def add_student(self, student_id, group_id):
+        """Method that adds a student, `student_id`, to the group, `group_id` using the StudentGroupJoin table."""
+        await self.db.execute("INSERT INTO student_group (student_id, group_id) VALUES ($1, $2)", student_id, group_id)
+
+    async def remove_student(self, student_id, group_id):
+        """Method that removes a student, `student_id`, to the group, `group_id` using the StudentGroupJoin table."""
+        await self.db.execute("DELETE FROM student_group WHERE student_id = $1 and group_id = $2", student_id, group_id)
+
+    async def students(self, group_id):
+        """Returns all the students in a given group, denoted by `group_id`."""
+        data = await self.db.fetch("SELECT * FROM student_group WHERE group_id = $1", group_id)
+        return data

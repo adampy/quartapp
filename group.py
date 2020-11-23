@@ -107,3 +107,49 @@ async def patch_group(id):
     
     await groups.update(current)
     return '', HTTPCode.OK
+
+@bp.route('/<id>/join', methods = ['POST'])
+@auth_needed(Auth.TEACHER)
+async def join_group(id):
+    """Route that adds students to the group. Student IDs are provided in the form data under `students` key."""
+    if not id.isdigit():
+        return '', HTTPCode.BADREQUEST
+
+    data = await request.form
+    raw_students = data.get("students") or None
+    if not raw_students:
+        return '', HTTPCode.BADREQUEST
+
+    students = [int(id) for id in raw_students.split(',') if id.isdigit()]
+    groups = current_app.config['group_manager']
+    for student_id in students:
+        await groups.add_student(student_id, int(id))
+    return '', HTTPCode.OK
+
+@bp.route('/<id>/leave', methods = ['POST'])
+@auth_needed(Auth.TEACHER)
+async def leave_group(id):
+    """Route that removes students from a group."""
+    if not id.isdigit():
+        return '', HTTPCode.BADREQUEST
+
+    data = await request.form
+    raw_students = data.get("students") or None
+    if not raw_students:
+        return '', HTTPCode.BADREQUEST
+
+    students = [int(id) for id in raw_students.split(',') if id.isdigit()]
+    groups = current_app.config['group_manager']
+    for student_id in students:
+        await groups.remove_student(student_id, int(id))
+    return '', HTTPCode.OK
+
+@bp.route('/<id>/students', methods = ['GET'])
+@auth_needed(Auth.TEACHER)
+async def get_group_students(id):
+    if not id.isdigit():
+        return '', HTTPCode.BADREQUEST
+    
+    groups = current_app.config['group_manager']
+    data = await groups.students(int(id))
+    return stringify(data), HTTPCode.OK
