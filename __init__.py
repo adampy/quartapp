@@ -1,11 +1,13 @@
 ﻿from quart import Quart
-import student, teacher, group
+import student, teacher, group, task
 import asyncpg
 import asyncio
 from csv import reader
 import os
 from database import DatabaseHandler
-from managers import StudentManager, TeacherManager, GroupManager
+from managers import StudentManager, TeacherManager, GroupManager, TaskManager
+
+# TODO: Remove fetchrow
 
 # TODO: Test teacher routes
 # TODO: Test cache limits
@@ -31,6 +33,7 @@ def create_app():
     app.register_blueprint(student.bp)
     app.register_blueprint(teacher.bp)
     app.register_blueprint(group.bp)
+    app.register_blueprint(task.bp)
 
     @app.before_serving
     async def on_startup():
@@ -38,6 +41,7 @@ def create_app():
         app.config['student_manager'] = StudentManager()
         app.config['teacher_manager'] = TeacherManager()
         app.config['group_manager'] = GroupManager()
+        app.config['task_manager'] = TaskManager()
 
     return app
 

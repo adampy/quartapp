@@ -28,7 +28,8 @@ Returns `username, password` or False if the request doesn't contain properly fo
         return False
 
 def auth_needed(authentication: Auth, provide_obj: bool = False):
-    """A decorator / wrapper that continues with the wrapped function if correct authentication is given."""
+    """A decorator / wrapper that continues with the wrapped function if correct authentication is given.
+    An argument `auth_obj` is passed into the wrapped function if a teacher or student is used to authenticate the route."""
     def auth(f):
         @wraps(f)
         async def decorated_function(*args, **kwargs):

@@ -38,7 +38,6 @@ class Cache:
         if out:
             self.times[key] = datetime.now() # Update last retrieval time
             return out
-        print(f"Cannot find {key} in {self.c}")
         return False
 
 class AbstractBaseObject:
@@ -105,6 +104,23 @@ class Group(AbstractBaseObject):
         self.subject = data[3]
         return self
 
+class Task(AbstractBaseObject):
+    @classmethod
+    def create_from(cls, data: [], *args, **kwargs):
+        """Data supplied must follow: [id, group_id, description, date_set, date_due, max_score]"""
+        super().__init__(cls)
+        self = Task()
+        self.data = data
+        self.id = data[0]
+        self.group_id = data[1]
+        self.title = data[2]
+        self.description = data[3]
+        self.date_set = data[4]
+        self.date_due = data[5]
+        self.max_score = data[6]
+
+        return self
+
 class AbstractBaseManager:
     """This is an Abstract Base Class (ABC) that only contians references to the methods that need to be implemented by its children.
     The four methods that need implementing are closely related to CRUD (Create, Retrieve, Update, Delete) and are:
@@ -134,6 +150,7 @@ class AbstractUserManager(AbstractBaseManager):
     def __init__(self, student, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.cache = Cache(16)
+        self.is_student = student
         self.table_name = {True: 'student', False:'teacher'}[student] # This is not susseptible to attack (no user inputs)
         self.child_obj = {True: Student, False: Teacher}[student]
 
@@ -184,7 +201,7 @@ class AbstractUserManager(AbstractBaseManager):
         The function returns the user data object if the provided credentials are valid, else returns False."""
 
         # CHECK CACHE
-        print(f"{self.child_obj.__name__} cache: {self.cache.c}")
+        #print(f"{self.child_obj.__name__} cache: {self.cache.c}")
         cache_result = self.cache.get(username)
         if cache_result: # Checks whether the user appears in the cache
             salt_in = bytearray.fromhex(cache_result.salt)
@@ -322,5 +339,52 @@ class GroupManager(AbstractBaseManager):
 
     async def students(self, group_id):
         """Returns all the students in a given group, denoted by `group_id`."""
-        data = await self.db.fetch("SELECT * FROM student_group WHERE group_id = $1", group_id)
-        return data
+        data = await self.db.fetch("""SELECT id, forename, surname, username, salt, password, alps
+        FROM student_group
+        LEFT JOIN student ON student.id = student_group.student_id
+        WHERE student_group.group_id = $1;""", group_id) # Get student data from the join table
+        return [Student.create_from(x) for x in data] # Return student objects
+
+class TaskManager(AbstractBaseManager):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    async def get(self, id = -1, student_id = -1, group_id = -1):
+        """Function that returns the tasks. It can take a task id, student id, or a group id as arguments.
+        If no task it found -> False
+        If no arguments are given -> all tasks are returned"""
+        
+        if id == -1 and student_id == -1 and group_id == -1: # Then no parameters have been given
+            # Get all tasks
+            data = await self.db.fetch("SELECT * FROM task")
+            return [Task.create_from(x) for x in data]
+        
+        if id != -1:
+            # Search for the specific task
+            data = await self.db.fetchrow("SELECT * FROM task WHERE id = $1", int(id))
+            return Task.create_from(data) #TODO: Error checking - if not data, id < 1, etc.
+
+        if student_id != -1:
+            # Get all the tasks the student can see
+            data = await self.db.fetch("SELECT * FROM task WHERE group_id IN (SELECT group_id FROM student_group WHERE student_id = $1);", int(student_id))
+            return [Task.create_from(x) for x in data]
+
+        if group_id != -1:
+            # Get all the tasks a group can see
+            data = await self.db.fetch("SELECT * FROM task WHERE group_id = $1", int(group_id))
+            return [Task.create_from(x) for x in data]
+        
+
+    async def create(self, group_id, title, desc, date_due, max_score, *args, **kwargs):
+        """Creates a new task in the database."""
+        await self.db.execute("INSERT INTO task (title, description, group_id, max_score, date_due) VALUES ($1, $2, $3, $4, $5)", title, desc, group_id, max_score, date_due)
+
+    async def update(self, task: Task, *args, **kwargs):
+        """Updates an existing task given by `task`. The task is edited by looking at `task.id`."""
+        params = [task.title, task.description, task.group_id, task.max_score, task.date_set, task.date_due, task.id]
+        await self.db.execute("UPDATE task SET title = $1, description = $2, group_id = $3, max_score = $4, date_set = $5, date_due = $6 WHERE id = $7", *params)
+
+    async def delete(self, task_id, *args, **kwargs):
+        """Deletes the a task from the database, given the ID of the task."""
+        await self.db.execute("DELETE FROM task WHERE id = $1", task_id)
+        # TODO: Add exists funciton s.t. if delete is run with a task that doesn't exist it throws an error

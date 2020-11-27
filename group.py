@@ -1,7 +1,8 @@
 ﻿from quart import Blueprint, request, current_app
-from utils import stringify # Functions
+from utils import stringify, parse_datetime # Functions
 from utils import HTTPCode # Enumeratons
 from auth import auth_needed, Auth
+from datetime import datetime, timedelta # For making a task and setting deadline
 
 bp = Blueprint("group", __name__, url_prefix = "/group")
 
@@ -147,9 +148,48 @@ async def leave_group(id):
 @bp.route('/<id>/students', methods = ['GET'])
 @auth_needed(Auth.TEACHER)
 async def get_group_students(id):
+    """Get all the students in a given group."""
     if not id.isdigit():
         return '', HTTPCode.BADREQUEST
     
     groups = current_app.config['group_manager']
     data = await groups.students(int(id))
     return stringify(data), HTTPCode.OK
+
+# -- TASKS --
+
+@bp.route('/<id>/task', methods = ['POST'])
+@auth_needed(Auth.TEACHER)
+async def make_new_task(id):
+    """Route that creates a new task for a given group. When providing the date due, it must be in UTC, and the format: dd/mm/yyyy|hh:mm"""
+    if not id.isdigit():
+        return '', HTTPCode.BADREQUEST
+
+    data = await request.form
+    title = data.get("title") or None
+    description = data.get("description") or None
+    max_score = data.get("max_score") or None
+    to_parse = data.get("date_due") or None
+
+    date_due = parse_datetime(to_parse)
+
+    if not title or not description or not max_score or not max_score.isdigit() or not date_due:
+        return '', HTTPCode.BADREQUEST # Not all necessary args given, return BADREQUEST
+
+    tasks = current_app.config['task_manager']
+    await tasks.create(int(id), title, description, date_due, int(max_score))
+    return '', HTTPCode.CREATED
+
+@bp.route('/<id>/task', methods = ['GET'])
+@auth_needed(Auth.ANY)
+async def get_group_tasks(id):
+    """Route that gets all the tasks relating to a group. Any authentication level needed."""
+    if not id.isdigit():
+        return '', HTTPCode.BADREQUEST
+
+    tasks = current_app.config['task_manager']
+    data = await tasks.get(group_id = int(id))
+    if not data:
+        return '', HTTPCode.NOTFOUND
+    else:
+        return stringify(data), HTTPCode.OK

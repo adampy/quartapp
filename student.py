@@ -151,6 +151,7 @@ async def teacher_patch_student(id):
     
     # UPDATE DB
     if form.get('password'): # If password needs changing
+        print("change password")
         await students.update(original, student, reset_password = True)
     else:
         await students.update(original, student)
