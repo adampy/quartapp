@@ -16,7 +16,6 @@ from managers import StudentManager, TeacherManager, GroupManager, TaskManager, 
 # TODO: Catch UsernameTaken exceptions
 # TODO: Validate inputs for students
 # TODO: Try and except for database inputs - move try and except into DatabaseHandler methods
-# TODO: Route validation to ensure that all /<param> routes have integer ID when NOT ?username=True
 # TODO: Try/Except for ensuring PUT requests have all data necessary
 
 try:

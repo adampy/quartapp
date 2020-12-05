@@ -90,6 +90,8 @@ async def get_student(param):
     if username:
         current_student = await students.get(username = username)
     else:
+        if not param.isdigit():
+            return '', HTTPCode.BADREQUEST # ID supplied is not integer
         current_student = await students.get(id = int(param))
 
     if current_student:
@@ -126,6 +128,9 @@ async def put_student(id):
 @auth_needed(Auth.TEACHER)
 async def teacher_patch_student(id):
     """PATCH STUDENT"""
+    if not id.isdigit():
+        return '', HTTPCode.BADREQUEST
+
     form = await request.form
     students = current_app.config['student_manager']
     student = await students.get(id = int(id))
@@ -161,7 +166,9 @@ async def teacher_patch_student(id):
 @auth_needed(Auth.TEACHER)
 async def delete_student(id):
     """DELETE STUDENT"""
-    id = int(id)
-    await current_app.config['student_manager'].delete(id)
+    if not id.isdigit():
+        return '', HTTPCode.BADREQUEST
+    
+    await current_app.config['student_manager'].delete(int(id))
     return '', HTTPCode.OK
 

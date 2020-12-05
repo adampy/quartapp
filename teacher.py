@@ -89,6 +89,9 @@ async def get_teacher(param):
 @auth_needed(Auth.ADMIN)
 async def put_teacher(id):
     """PUT TEACHER"""
+    if not id.isdigit():
+        return '', HTTPCode.BADREQUEST
+
     form = await request.form
     teachers = current_app.config['teacher_manager']
     current_teacher = await teachers.get(id = int(id))
@@ -114,6 +117,9 @@ async def put_teacher(id):
 @auth_needed(Auth.TEACHER)
 async def patch_teacher(id):
     """PATCH teacher"""
+    if not id.isdigit():
+        return '', HTTPCode.BADREQUEST
+
     form = await request.form
     teachers = current_app.config['teacher_manager']
     teacher = await teachers.get(id = int(id))
