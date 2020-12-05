@@ -30,3 +30,9 @@ Having my own class which uses composition also allows me to be more flexible, a
         async with self.pool.acquire() as connection:
             async with connection.transaction():
                 await connection.execute(sql, *params)
+
+    async def executemany(self, sql, array2d): # TODO: Add docstrings for these methods
+        async with self.pool.acquire() as connection:
+            async with connection.transaction():
+                await connection.exeutemany(sql, array2d)
+        

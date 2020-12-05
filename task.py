@@ -9,7 +9,10 @@ bp = Blueprint("task", __name__, url_prefix = "/task")
 @bp.route('/', methods = ['GET'])
 @auth_needed(Auth.ANY, provide_obj = True)
 async def get_all_tasks(auth_obj):
-    """Route that gets all the tasks in the database. Any authentication necessary."""
+    """Route that gets all the tasks in the database. Any authentication necessary.
+    Teacher auth -> all tasks returned
+    Student auth -> student's tasks returned
+    No auth -> BADREQUEST"""
     tasks = current_app.config['task_manager']
 
     if type(auth_obj) == Student:
@@ -17,7 +20,7 @@ async def get_all_tasks(auth_obj):
         data = await tasks.get(student_id = auth_obj.id)
         return stringify(data) if data else '', HTTPCode.OK
     else:
-        # Get the teacher's tasks
+        # Get the teacher's tasks (all the tasks from the database)
         data = await tasks.get()
         return stringify(data) if data else '', HTTPCode.OK
 
@@ -63,7 +66,7 @@ async def patch_task(id):
 
 @bp.route('/<id>', methods = ['PUT'])
 @auth_needed(Auth.TEACHER)
-async def patch_task(id):
+async def put_task(id):
     """Route that puts a task given its ID."""
     if not id.isdigit():
         return '', HTTPCode.BADREQUEST
@@ -96,4 +99,73 @@ async def delete_task(id):
 
     tasks = current_app.config['task_manager']
     await tasks.delete(int(id))
+    return '', HTTPCode.OK
+
+# -- MARKS --
+@bp.route('/<id>/status', methods = ['GET', 'POST'])
+@auth_needed(Auth.STUDENT, provide_obj = True)
+async def task_completed(id, auth_obj):
+    """Route that sets a task to completed for a given student. This route must have a 
+    'completed' field in the form-data if the task is completed. If not given, this defaults to False."""
+    if not id.isdigit():
+        return '', HTTPCode.BADREQUEST
+
+    tasks = current_app.config['task_manager']
+    task_id = int(id)
+    students_tasks = await tasks.get(student_id = auth_obj.id)
+    
+    # Ensure that the task provided is a task assigned to the studend and not a 'rogue' task
+    found = False
+    for task in students_tasks:
+        if task.id == task_id:
+            found = True
+            break
+    if not found:
+        return '', HTTPCode.BADREQUEST
+
+    if request.method == "POST":
+        form = await request.form
+        completed = True if form.get("completed") else False
+
+        await tasks.student_completed(completed, auth_obj.id, task_id)
+        return '', HTTPCode.OK
+
+    elif request.method == "GET":
+        marks = current_app.config['mark_manager']
+        mark = await marks.get(student_id = auth_obj.id, task_id = task_id)
+        if mark:
+            return stringify(mark), HTTPCode.OK
+        else:
+            return '', HTTPCode.NOTFOUND
+
+@bp.route('/<id>/mark', methods = ['GET'])
+@auth_needed(Auth.TEACHER)
+async def get_task_marks(id):
+    """Gets all the marks avaliable for the given task. This route can be used to see who has completed a task, too."""
+    if not id.isdigit():
+        return '', HTTPCode.BADREQUEST
+
+    marks = current_app.config['mark_manager']
+    data = await marks.get(task_id = int(id))
+    return stringify([data]), HTTPCode.OK
+    
+
+@bp.route('/<id>/provide_feedback', methods = ['POST'])
+@auth_needed(Auth.TEACHER)
+async def prov_feedback(id):
+    data = await request.form
+    student_id = data.get("student") or None
+    score = data.get("score") or None
+    feedback = data.get("feedback") or None
+
+    if not student_id or not student_id.isdigit() or not id.isdigit() or not score or not score.isdigit() or not feedback:
+        return '', HTTPCode.BADREQUEST
+    
+    student_id = int(student_id)
+    task_id = int(id)
+    score = int(score)
+    
+    # TODO: Ensure the teacher provided is the teacher who set the task
+    tasks = current_app.config['task_manager']
+    await tasks.provide_feedback(feedback, score, student_id, task_id)
     return '', HTTPCode.OK

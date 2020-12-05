@@ -349,9 +349,14 @@ class TaskManager(AbstractBaseManager):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+    async def _mark_exists(self, student_id, task_id):
+        """Internal method used to see if a mark already exists in the table."""
+        query_result = await self.db.fetchrow("SELECT EXISTS (SELECT * FROM mark_tbl WHERE student_id = $1 AND task_id = $2)", student_id, task_id)
+        return query_result.get("exists")
+
     async def get(self, id = -1, student_id = -1, group_id = -1):
         """Function that returns the tasks. It can take a task id, student id, or a group id as arguments.
-        If no task it found -> False
+        If no task is found -> False
         If no arguments are given -> all tasks are returned"""
         
         if id == -1 and student_id == -1 and group_id == -1: # Then no parameters have been given
@@ -388,3 +393,53 @@ class TaskManager(AbstractBaseManager):
         """Deletes the a task from the database, given the ID of the task."""
         await self.db.execute("DELETE FROM task WHERE id = $1", task_id)
         # TODO: Add exists funciton s.t. if delete is run with a task that doesn't exist it throws an error
+
+    async def student_completed(self, has_completed:bool, student_id, task_id):
+        """Either adds a new reference to the task+student in the mark_tbl table or edits an existing one. This method
+        changes their completed variable to `completed` provided."""
+        # TODO: Add *args, **kwargs to all methods
+        if await self._mark_exists(student_id, task_id):
+            # Student exists, update current
+            await self.db.execute("UPDATE mark_tbl SET has_completed = $1 WHERE student_id = $2 AND task_id = $3", has_completed, student_id, task_id)
+        else:
+            # Make new relationship
+            await self.db.execute("INSERT INTO mark_tbl (student_id, task_id, has_completed) VALUES ($1, $2, $3)", student_id, task_id, has_completed)
+
+    async def provide_feedback(self, feedback, score, student_id: int, task_id: int):
+        """Provides feedback to a given student for a given task. This method assumes all error checking
+        has already been completed."""
+        if await self._mark_exists(student_id, task_id):
+            await self.db.execute("UPDATE mark_tbl SET feedback = $1, score = $2, has_completed = True, has_marked = True WHERE student_id = $3 AND task_id = $4", feedback, score, student_id, task_id)
+        else:
+            await self.db.execute("INSERT INTO mark_tbl (feedback, score, has_completed, has_marked) VALUES ($1, $2) WHERE student_id = $3 AND task_id = $4", feedback, score, student_id, task_id)
+
+class MarkManager(AbstractBaseManager):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    async def get(self, mark_id = -1, student_id = -1, group_id = -1, task_id = -1):
+        """Function that returns marks. It can take a mark id, student id, group id, or task id as an argument.
+        If no mark is found -> None
+        If no arguments are given -> all marks are returned"""
+        if not mark_id and not student_id and not group_id and not task_id:
+            # No parameters given, return all marks
+            data = await self.db.fetch("SELECT * FROM mark_tbl") # TODO: Add ; to the end of all SQL statements
+            return data if data else None
+
+        if student_id and task_id:
+            data = await self.db.fetch("SELECT * FROM mark_tbl WHERE student_id = $1 AND task_id = $2", student_id, task_id)
+            return data if data else None
+
+        if task_id:
+            data = await self.db.fetch("SELECT * FROM mark_tbl WHERE task_id = $1", task_id)
+            return data if data else None # TODO: Make a Mark object
+
+        if mark_id:
+            data = await self.db.fetch("SELECT * FROM mark_tbl WHERE id = $1", mark_id)
+            return data if data else None
+
+        if student_id:
+            data = await self.db.fetch("SELECT * FROM mark_tbl WHERE student_id = $1", student_id)
+
+        if group_id:
+            pass # TODO: Complete this route

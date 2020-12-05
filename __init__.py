@@ -5,7 +5,7 @@ import asyncio
 from csv import reader
 import os
 from database import DatabaseHandler
-from managers import StudentManager, TeacherManager, GroupManager, TaskManager
+from managers import StudentManager, TeacherManager, GroupManager, TaskManager, MarkManager
 
 # TODO: Remove fetchrow
 
@@ -42,6 +42,7 @@ def create_app():
         app.config['teacher_manager'] = TeacherManager()
         app.config['group_manager'] = GroupManager()
         app.config['task_manager'] = TaskManager()
+        app.config['mark_manager'] = MarkManager()
 
     return app
 
