@@ -3,6 +3,7 @@ from utils import stringify, parse_datetime
 from utils import HTTPCode
 from auth import auth_needed, Auth
 from managers import Student
+from exceptions import DateTimeParserError
 
 bp = Blueprint("task", __name__, url_prefix = "/task")
 
@@ -54,12 +55,15 @@ async def patch_task(id):
     if description: current.description = description
 
     max_score = data.get("max_score")
-    if max_score and max_score.isdigit(): #TODO: Should group IDs be changeable?
+    if max_score and max_score.isdigit():
         current.max_score = int(max_score)
 
     date_due = data.get("date_due")
     if date_due:
-        current.date_due = parse_datetime(date_due) #TODO: Catch potential errors here, and in the same call in PUT /task/<id>
+        try:
+            current.date_due = parse_datetime(date_due)
+        except DateTimeParserError:
+            return '', HTTPCode.BADREQUEST # Datetime formatted incorrectly
 
     await tasks.update(current)
     return '', HTTPCode.OK
@@ -85,7 +89,10 @@ async def put_task(id):
     current.title = title
     current.description = description
     current.max_score = max_score
-    current.date_due = parse_datetime(date_due)
+    try:
+        current.date_due = parse_datetime(date_due)
+    except DateTimeParserError:
+        return '', HTTPCode.BADREQUEST
 
     await tasks.update(current)
     return '', HTTPCode.OK

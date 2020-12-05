@@ -3,6 +3,7 @@ import asyncio
 import asyncpg
 import datetime
 from datetime import datetime
+from exceptions import DateTimeParserError
 
 class HTTPCode:
     """Enumeration that links HTTP code names to their integer equivalent."""
@@ -55,4 +56,4 @@ def parse_datetime(string: str):
         return obj
     except ValueError:
         # The datetime information provided is out of the range. E.g. the day provided may be 40.
-        return None
+        raise DateTimeParserError
