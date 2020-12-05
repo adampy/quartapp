@@ -192,7 +192,7 @@ class AbstractUserManager(AbstractBaseManager):
             else:
                 return cached
 
-    async def delete(self, id, *args, **kwargs):
+    async def delete(self, id):
         """Delete a user object from the database."""
         await self.db.execute(f"DELETE FROM {self.table_name} WHERE id = $1", id)
 
@@ -380,24 +380,26 @@ class TaskManager(AbstractBaseManager):
             return [Task.create_from(x) for x in data]
         
 
-    async def create(self, group_id, title, desc, date_due, max_score, *args, **kwargs):
+    async def create(self, group_id, title, desc, date_due, max_score):
         """Creates a new task in the database."""
         await self.db.execute("INSERT INTO task (title, description, group_id, max_score, date_due) VALUES ($1, $2, $3, $4, $5)", title, desc, group_id, max_score, date_due)
 
-    async def update(self, task: Task, *args, **kwargs):
+    async def update(self, task: Task):
         """Updates an existing task given by `task`. The task is edited by looking at `task.id`."""
         params = [task.title, task.description, task.group_id, task.max_score, task.date_set, task.date_due, task.id]
         await self.db.execute("UPDATE task SET title = $1, description = $2, group_id = $3, max_score = $4, date_set = $5, date_due = $6 WHERE id = $7", *params)
 
-    async def delete(self, task_id, *args, **kwargs):
+    async def delete(self, task_id):
         """Deletes the a task from the database, given the ID of the task."""
-        await self.db.execute("DELETE FROM task WHERE id = $1", task_id)
-        # TODO: Add exists funciton s.t. if delete is run with a task that doesn't exist it throws an error
+        task = await self.db.fetchrow("SELECT EXISTS (SELECT * FROM task WHERE id = $1)", task_id)
+        if not task.get("exists"):
+            return False # TODO: Perhaps change this to an exception
+        else:
+            await self.db.execute("DELETE FROM task WHERE id = $1", task_id)
 
     async def student_completed(self, has_completed:bool, student_id, task_id):
         """Either adds a new reference to the task+student in the mark_tbl table or edits an existing one. This method
         changes their completed variable to `completed` provided."""
-        # TODO: Add *args, **kwargs to all methods
         if await self._mark_exists(student_id, task_id):
             # Student exists, update current
             await self.db.execute("UPDATE mark_tbl SET has_completed = $1 WHERE student_id = $2 AND task_id = $3", has_completed, student_id, task_id)
