@@ -121,6 +121,22 @@ class Task(AbstractBaseObject):
 
         return self
 
+class Mark(AbstractBaseObject):
+    @classmethod
+    def create_from(cls, data: [], *args, **kwargs):
+        """Data supplied must follow: [student_id, task_id, has_completed, has_marked, score, feedback]"""
+        super().__init__(cls)
+        self = Task()
+        self.data = data
+        self.student_id = data[0]
+        self.task_id = data[1]
+        self.has_completed = data[2]
+        self.has_marked = data[3]
+        self.score = data[4]
+        self.feedbacl = data[5]
+
+        return self
+
 class AbstractBaseManager:
     """This is an Abstract Base Class (ABC) that only contians references to the methods that need to be implemented by its children.
     The four methods that need implementing are closely related to CRUD (Create, Retrieve, Update, Delete) and are:
@@ -298,8 +314,16 @@ class TeacherManager(AbstractUserManager):
 class GroupManager(AbstractBaseManager):
     """Manager that controls the database when processing groups."""
 
-    async def get(self, id = -1):
+    async def get(self, id = -1, student_id = -1):
         """Gets all groups from the database. If the GroupID is not provided then it will return all groups."""
+        if student_id != -1:
+            # Get students groups
+            data = await self.db.fetch("""SELECT group_tbl.id, group_tbl.teacher_id, group_tbl.name, group_tbl.subject
+FROM student_group
+INNER JOIN group_tbl ON student_group.group_id = group_tbl.id
+WHERE student_group.student_id = $1;""", student_id)
+            return [Group.create_from(x) for x in data] if data else False
+
         if id == -1:
             # Get all groups
             to_return = []
@@ -428,42 +452,40 @@ AND teacher_id = $2);""", task_id, auth_obj.id) #SQL that returns True if the au
         if not perms:
             raise PermissionError # TODO: Make all validation errors throw exceptions. These can be handled in the main program
 
-        # TODO: Test the above query
-
         if await self._mark_exists(student_id, task_id):
             await self.db.execute("UPDATE mark_tbl SET feedback = $1, score = $2, has_completed = True, has_marked = True WHERE student_id = $3 AND task_id = $4;", feedback, score, student_id, task_id)
         else:
-            await self.db.execute("INSERT INTO mark_tbl (feedback, score, has_completed, has_marked) VALUES ($1, $2) WHERE student_id = $3 AND task_id = $4;", feedback, score, student_id, task_id)
+            await self.db.execute("INSERT INTO mark_tbl (student_id, task_id, feedback, score, has_completed, has_marked) VALUES ($1, $2, $3, $4, True, True);", student_id, task_id, feedback, score)
 
 class MarkManager(AbstractBaseManager):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    async def get(self, mark_id = -1, student_id = -1, group_id = -1, task_id = -1):
+    async def get(self, mark_id = None, student_id = None, group_id = None, task_id = None):
         """Function that returns marks. It can take a mark id, student id, group id, or task id as an argument.
         If no mark is found -> None
         If no arguments are given -> all marks are returned"""
         if not mark_id and not student_id and not group_id and not task_id:
             # No parameters given, return all marks
             data = await self.db.fetch("SELECT * FROM mark_tbl;")
-            return data if data else None
+            return [Mark.create_from(x) for x in data]
 
         if student_id and task_id:
-            data = await self.db.fetch("SELECT * FROM mark_tbl WHERE student_id = $1 AND task_id = $2;", student_id, task_id)
-            return data if data else None
+            data = await self.db.fetchrow("SELECT * FROM mark_tbl WHERE student_id = $1 AND task_id = $2;", student_id, task_id)
+            return Mark.create_from(data) if data else None
 
         if task_id:
             data = await self.db.fetch("SELECT * FROM mark_tbl WHERE task_id = $1;", task_id)
-            return data if data else None # TODO: Make a Mark object
+            return [Mark.create_from(x) for x in data]
 
         if mark_id:
             data = await self.db.fetch("SELECT * FROM mark_tbl WHERE id = $1;", mark_id)
-            return data if data else None
+            return [Mark.create_from(x) for x in data]
 
         if student_id:
             data = await self.db.fetch("SELECT * FROM mark_tbl WHERE student_id = $1;", student_id)
-            return data if data else None
+            return [Mark.create_from(x) for x in data]
 
         if group_id:
             data = await self.db.fetch("SELECT * FROM mark_tbl WHERE task_id IN (SELECT id FROM task WHERE group_id = $1);", group_id) # SQL to get all marks for a given group
-            return data if data else None
+            return [Mark.create_from(x) for x in data]

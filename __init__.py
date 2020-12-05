@@ -7,15 +7,11 @@ import os
 from database import DatabaseHandler
 from managers import StudentManager, TeacherManager, GroupManager, TaskManager, MarkManager
 
-# TODO: Remove fetchrow
-
 # TODO: Test teacher routes
 # TODO: Test cache limits
 # TODO: Test student PUT route
 
-# TODO: Validate inputs for students
 # TODO: Try and except for database inputs - move try and except into DatabaseHandler methods
-# TODO: Try/Except for ensuring PUT requests have all data necessary
 
 try:
     with open("credentials.csv", 'r') as f:

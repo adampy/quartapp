@@ -5,6 +5,8 @@ from auth import get_auth_details, hash_func, auth_needed, Auth
 from managers import Student
 from exceptions import UsernameTaken
 
+# TODO: Ensure that passwords are validated when they are entered - >= 8 length, 1 upper case, 1 number, etc
+
 bp = Blueprint("student", __name__, url_prefix = "/student")
 
 @bp.route('/auth', methods=['POST'])
@@ -28,6 +30,8 @@ async def password_reset():
     username = form.get("username")
     current_app.config['student_manager'].cache.remove(username)
     student = await current_app.config['db_handler'].fetchrow("SELECT password, salt FROM student WHERE username = $1", username)
+    if not student:
+        return '', HTTPCode.NOTFOUND
     if not student[0] and not student[1]:
         # Password *has* been reset
         new_password = form.get("password")
@@ -88,7 +92,6 @@ async def get_student(param):
     """GET STUDENT"""
     students = current_app.config['student_manager']
     username = request.args.get("username")
-    current_student = None
 
     if username:
         current_student = await students.get(username = username)
@@ -109,6 +112,8 @@ async def put_student(id):
     form = await request.form
     students = current_app.config['student_manager']
     current_student = await students.get(id = int(id))
+    if not current_student:
+        return '', HTTPCode.NOTFOUND
     to_update = current_student.make_copy() # Make a new student which we can use to change student values for
 
     # Replace student with given object
@@ -137,6 +142,8 @@ async def teacher_patch_student(id):
     form = await request.form
     students = current_app.config['student_manager']
     student = await students.get(id = int(id))
+    if not student:
+        return '', HTTPCode.NOTFOUND
     original = student.make_copy()
 
     # GET DATA FROM FORM AND UPDATE STUDENT IF GIVEN

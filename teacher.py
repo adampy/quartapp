@@ -6,7 +6,7 @@ from exceptions import UsernameTaken
 
 bp = Blueprint("teacher", __name__, url_prefix = "/teacher")
 
-@bp.route('/auth', methods=['POST']) #DONE
+@bp.route('/auth', methods=['POST'])
 @auth_needed(Auth.NONE)
 async def auth():
     """The route that the client uses to verify credentials."""
@@ -19,7 +19,7 @@ async def auth():
     else:
         return '', HTTPCode.UNAUTHORIZED
 
-@bp.route("/", methods = ["GET"]) #DONE
+@bp.route("/", methods = ["GET"])
 @auth_needed(Auth.ANY)
 async def get_teachers():
     """/teacher route"""
@@ -28,7 +28,7 @@ async def get_teachers():
         return '', HTTPCode.NOTFOUND
     return stringify(teachers), HTTPCode.OK
 
-@bp.route("/", methods = ["PATCH"]) #DONE
+@bp.route("/", methods = ["PATCH"])
 @auth_needed(Auth.TEACHER, provide_obj = True)
 async def patch_own_teacher(auth_obj):
     form = await request.form
@@ -77,7 +77,6 @@ async def get_teacher(param):
     """GET teacher"""
     username = request.args.get("username")
     teachers = current_app.config['teacher_manager']
-    teacher = None
 
     if username:
         teacher = await teachers.get(username = username)
@@ -89,7 +88,7 @@ async def get_teacher(param):
         return stringify([teacher]), HTTPCode.OK
     return '', HTTPCode.NOTFOUND
 
-@bp.route("/<id>", methods = ["PUT"]) #DONE
+@bp.route("/<id>", methods = ["PUT"])
 @auth_needed(Auth.ADMIN)
 async def put_teacher(id):
     """PUT TEACHER"""
@@ -99,6 +98,8 @@ async def put_teacher(id):
     form = await request.form
     teachers = current_app.config['teacher_manager']
     current_teacher = await teachers.get(id = int(id))
+    if not current_teacher:
+        return '', HTTPCode.NOTFOUND
     to_update = current_teacher.make_copy() # Make a new teacher which we can use to change student values for
 
     # Replace student with given object
@@ -117,7 +118,7 @@ async def put_teacher(id):
     await teachers.update(current_teacher, to_update)
     return '', HTTPCode.OK
     
-@bp.route("/<id>", methods = ["PATCH"]) #DONE
+@bp.route("/<id>", methods = ["PATCH"])
 @auth_needed(Auth.TEACHER)
 async def patch_teacher(id):
     """PATCH teacher"""
@@ -127,6 +128,8 @@ async def patch_teacher(id):
     form = await request.form
     teachers = current_app.config['teacher_manager']
     teacher = await teachers.get(id = int(id))
+    if not teacher:
+        return '', HTTPCode.NOTFOUND
     original = teacher.make_copy() # Make a new copy that we can edit
 
     # GET DATA FROM FORM AND UPDATE TEACHER IF GIVEN

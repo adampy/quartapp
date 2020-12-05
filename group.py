@@ -3,14 +3,19 @@ from utils import stringify, parse_datetime # Functions
 from utils import HTTPCode # Enumeratons
 from auth import auth_needed, Auth
 from datetime import datetime, timedelta # For making a task and setting deadline
+from managers import Student
 
 bp = Blueprint("group", __name__, url_prefix = "/group")
 
 @bp.route('/', methods = ['GET'])
-@auth_needed(Auth.ANY)
-async def get_groups():
+@auth_needed(Auth.ANY, provide_obj = True)
+async def get_groups(auth_obj):
     groups = current_app.config['group_manager']
-    data = await groups.get()
+
+    if type(auth_obj) == Student:
+        data = await groups.get(student_id = auth_obj.id)
+    else:
+        data = await groups.get()
 
     if not data:
         return '', HTTPCode.NOTFOUND
@@ -54,8 +59,6 @@ async def delete_group(id):
 
     groups = current_app.config['group_manager']
     await groups.delete(int(id)) # We know that the int must be integer at this point
-    #to_delete = await groups.get(id = int(id))
-    #await groups.delete(to_delete)
     return '', HTTPCode.OK
 
 @bp.route('/<id>', methods = ['PUT'])
@@ -70,11 +73,13 @@ async def put_group(id):
     subject = data.get("subject") or None
     name = data.get("name") or None
 
-    if not teacher_id or not subject or not name or not teacher_id.isdigit():
+    if not (teacher_id and teacher_id.isdigit() and subject and name):
         return '', HTTPCode.BADREQUEST # Some necessary arguments are missing, return 400
 
     groups = current_app.config['group_manager']
     to_update = await groups.get(id= int(id))
+    if not to_update:
+        return '', HTTPCode.NOTFOUND
     to_update.teacher_id = int(teacher_id)
     to_update.subject = subject
     to_update.name = name
@@ -91,6 +96,8 @@ async def patch_group(id):
     data = await request.form
     groups = current_app.config['group_manager']
     current = await groups.get(id = int(id))
+    if not current:
+        return '', HTTPCode.NOTFOUND
 
     name = data.get("name") or None
     subject = data.get("subject") or None

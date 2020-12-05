@@ -19,11 +19,14 @@ async def get_all_tasks(auth_obj):
     if type(auth_obj) == Student:
         # Get only student's tasks
         data = await tasks.get(student_id = auth_obj.id)
-        return stringify(data) if data else '', HTTPCode.OK
     else:
         # Get the teacher's tasks (all the tasks from the database)
         data = await tasks.get()
-        return stringify(data) if data else '', HTTPCode.OK
+
+    if data:
+        return stringify(data), HTTPCode.OK
+    else:
+        return '', HTTPCode.NOTFOUND
 
 @bp.route('/<id>', methods = ['GET'])
 @auth_needed(Auth.ANY)
@@ -34,7 +37,8 @@ async def get_task(id):
 
     tasks = current_app.config['task_manager']
     task = await tasks.get(id = int(id))
-    if not task: return '', HTTPCode.NOTFOUND # TODO: Change all occurences where the item returned is '' to include a 404
+    if not task:
+        return '', HTTPCode.NOTFOUND
     return stringify([task]), HTTPCode.OK
 
 @bp.route('/<id>', methods = ['PATCH'])
@@ -46,6 +50,8 @@ async def patch_task(id):
 
     tasks = current_app.config['task_manager']
     current = await tasks.get(id = int(id))
+    if not current:
+        return '', HTTPCode.NOTFOUND
 
     data = await request.form
     title = data.get("title") or None
@@ -81,11 +87,13 @@ async def put_task(id):
     max_score = data.get("max_score") or None
     date_due = data.get("date_due") or None
 
-    if not title or not description or not max_score or not date_due or not max_score.isdigit():
+    if not (title and description and date_due and max_score and max_score.isdigit()):
         return '', HTTPCode.BADREQUEST
 
     tasks = current_app.config['task_manager']
     current = await tasks.get(id = int(id))
+    if not current:
+        return '', HTTPCode.NOTFOUND
     current.title = title
     current.description = description
     current.max_score = max_score
@@ -147,7 +155,10 @@ async def get_task_marks(id):
 
     marks = current_app.config['mark_manager']
     data = await marks.get(task_id = int(id))
-    return stringify([data]), HTTPCode.OK
+    if not data:
+        return '', HTTPCode.NOTFOUND
+    else:
+        return stringify([data]), HTTPCode.OK
     
 
 @bp.route('/<id>/provide_feedback', methods = ['POST'])
