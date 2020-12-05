@@ -400,6 +400,14 @@ class TaskManager(AbstractBaseManager):
     async def student_completed(self, has_completed:bool, student_id, task_id):
         """Either adds a new reference to the task+student in the mark_tbl table or edits an existing one. This method
         changes their completed variable to `completed` provided."""
+
+        query = await self.db.fetchrow("""SELECT EXISTS
+(SELECT * FROM task WHERE group_id IN
+(SELECT group_id FROM student_group WHERE student_id = $1)
+AND task.id = $2);""", student_id, task_id) # TODO: Test this SQL command works properly (prev. tested quickly)
+        if not query.get("exists"):
+            raise PermissionError
+
         if await self._mark_exists(student_id, task_id):
             # Student exists, update current
             await self.db.execute("UPDATE mark_tbl SET has_completed = $1 WHERE student_id = $2 AND task_id = $3;", has_completed, student_id, task_id)
@@ -407,9 +415,21 @@ class TaskManager(AbstractBaseManager):
             # Make new relationship
             await self.db.execute("INSERT INTO mark_tbl (student_id, task_id, has_completed) VALUES ($1, $2, $3);", student_id, task_id, has_completed)
 
-    async def provide_feedback(self, feedback, score, student_id: int, task_id: int):
+    async def provide_feedback(self, feedback, score, student_id: int, task_id: int, auth_obj):
         """Provides feedback to a given student for a given task. This method assumes all error checking
-        has already been completed."""
+        has already been completed. `auth_obj` is necessary to ensure that only the correct teacher is giving
+        the feedback."""
+
+        query = await self.db.fetchrow("""SELECT EXISTS
+(SELECT teacher_id FROM group_tbl WHERE group_tbl.id =
+(SELECT group_id FROM task WHERE task.id = $1)
+AND teacher_id = $2);""", task_id, auth_obj.id) #SQL that returns True if the auth_obj.id == task_id.group.teacher.id
+        perms = query.get("exists")
+        if not perms:
+            raise PermissionError # TODO: Make all validation errors throw exceptions. These can be handled in the main program
+
+        # TODO: Test the above query
+
         if await self._mark_exists(student_id, task_id):
             await self.db.execute("UPDATE mark_tbl SET feedback = $1, score = $2, has_completed = True, has_marked = True WHERE student_id = $3 AND task_id = $4;", feedback, score, student_id, task_id)
         else:
@@ -442,6 +462,8 @@ class MarkManager(AbstractBaseManager):
 
         if student_id:
             data = await self.db.fetch("SELECT * FROM mark_tbl WHERE student_id = $1;", student_id)
+            return data if data else None
 
         if group_id:
-            pass # TODO: Complete this route
+            data = await self.db.fetch("SELECT * FROM mark_tbl WHERE task_id IN (SELECT id FROM task WHERE group_id = $1);", group_id) # SQL to get all marks for a given group
+            return data if data else None

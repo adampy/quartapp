@@ -119,23 +119,16 @@ async def task_completed(id, auth_obj):
 
     tasks = current_app.config['task_manager']
     task_id = int(id)
-    students_tasks = await tasks.get(student_id = auth_obj.id)
     
-    # Ensure that the task provided is a task assigned to the studend and not a 'rogue' task
-    found = False
-    for task in students_tasks:
-        if task.id == task_id:
-            found = True
-            break
-    if not found:
-        return '', HTTPCode.BADREQUEST
-
     if request.method == "POST":
         form = await request.form
         completed = True if form.get("completed") else False
 
-        await tasks.student_completed(completed, auth_obj.id, task_id)
-        return '', HTTPCode.OK
+        try:
+            await tasks.student_completed(completed, auth_obj.id, task_id)
+            return '', HTTPCode.OK
+        except PermissionError:
+            return '', HTTPCode.UNAUTHORIZED # Unauthorized to change other peoples task statuses
 
     elif request.method == "GET":
         marks = current_app.config['mark_manager']
@@ -158,8 +151,8 @@ async def get_task_marks(id):
     
 
 @bp.route('/<id>/provide_feedback', methods = ['POST'])
-@auth_needed(Auth.TEACHER)
-async def prov_feedback(id):
+@auth_needed(Auth.TEACHER, provide_obj = True)
+async def prov_feedback(id, auth_obj):
     data = await request.form
     student_id = data.get("student") or None
     score = data.get("score") or None
@@ -172,7 +165,9 @@ async def prov_feedback(id):
     task_id = int(id)
     score = int(score)
     
-    # TODO: Ensure the teacher provided is the teacher who set the task
-    tasks = current_app.config['task_manager']
-    await tasks.provide_feedback(feedback, score, student_id, task_id)
-    return '', HTTPCode.OK
+    try:
+        tasks = current_app.config['task_manager']
+        await tasks.provide_feedback(feedback, score, student_id, task_id, auth_obj)
+        return '', HTTPCode.OK
+    except PermissionError:
+        return '', HTTPCode.UNAUTHORIZED # Teacher cannot provide feedback to tasks they have not set
