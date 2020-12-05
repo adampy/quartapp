@@ -2,6 +2,7 @@
 from utils import stringify, is_admin_code_valid # Functions
 from utils import HTTPCode
 from auth import Auth, auth_needed, hash_func
+from exceptions import UsernameTaken
 
 bp = Blueprint("teacher", __name__, url_prefix = "/teacher")
 
@@ -56,18 +57,21 @@ async def patch_own_teacher(auth_obj):
         await teachers.update(auth_obj, teacher)
     return '', HTTPCode.OK
 
-@bp.route("/", methods = ["POST"]) #DONE
+@bp.route("/", methods = ["POST"])
 @auth_needed(Auth.ADMIN) # (Pass obj will return the Admin code here if done with admin code, else a new teacher)
 async def create_teacher():
     """Creates a new teacher."""
     data = await request.form
     teachers = current_app.config['teacher_manager']
 
-    await teachers.create(data['forename'], data['surname'], data['username'], data['title'], data['password'])
-    teacher = await teachers.get(username = data['username'])
-    return stringify([teacher]), HTTPCode.CREATED
+    try:
+        await teachers.create(data['forename'], data['surname'], data['username'], data['title'], data['password'])
+        teacher = await teachers.get(username = data['username'])
+        return stringify([teacher]), HTTPCode.CREATED
+    except UsernameTaken:
+        return '', HTTPCode.BADREQUEST # Username taken
 
-@bp.route('/<param>', methods = ['GET']) #DONE
+@bp.route('/<param>', methods = ['GET'])
 @auth_needed(Auth.ANY)
 async def get_teacher(param):
     """GET teacher"""

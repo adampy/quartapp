@@ -13,7 +13,6 @@ from managers import StudentManager, TeacherManager, GroupManager, TaskManager, 
 # TODO: Test cache limits
 # TODO: Test student PUT route
 
-# TODO: Catch UsernameTaken exceptions
 # TODO: Validate inputs for students
 # TODO: Try and except for database inputs - move try and except into DatabaseHandler methods
 # TODO: Try/Except for ensuring PUT requests have all data necessary

@@ -3,6 +3,7 @@ from utils import stringify # Functions
 from utils import HTTPCode # Enumeratons
 from auth import get_auth_details, hash_func, auth_needed, Auth
 from managers import Student
+from exceptions import UsernameTaken
 
 bp = Blueprint("student", __name__, url_prefix = "/student")
 
@@ -53,10 +54,12 @@ async def new_student():
     students = current_app.config['student_manager']
     password = data.get('password') or None # If the password isn't given, make a new password
     
-    await students.create(data['forename'], data['surname'], data['username'], int(data['alps']), password = password)
-    
-    student = await students.get(username = data['username'])
-    return stringify([student]), HTTPCode.CREATED
+    try:
+        await students.create(data['forename'], data['surname'], data['username'], int(data['alps']), password = password)
+        student = await students.get(username = data['username'])
+        return stringify([student]), HTTPCode.CREATED
+    except UsernameTaken:
+        return '', HTTPCode.BADREQUEST # Username taken
 
 @bp.route('/', methods = ['PATCH'])
 @auth_needed(Auth.STUDENT, provide_obj = True)
