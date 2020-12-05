@@ -171,7 +171,7 @@ class AbstractUserManager(AbstractBaseManager):
                 if self.cache.c[key].id == id:
                     return self.cache.c[key]
 
-            data = await self.db.fetchrow(f"SELECT * FROM {self.table_name} WHERE id = $1", id)
+            data = await self.db.fetchrow(f"SELECT * FROM {self.table_name} WHERE id = $1;", id)
             if not data:
                 return False
             else:
@@ -183,7 +183,7 @@ class AbstractUserManager(AbstractBaseManager):
             # Search by username
             cached = self.cache.get(username)
             if not cached:
-                data = await self.db.fetchrow(f"SELECT * FROM {self.table_name} WHERE username = $1", username)
+                data = await self.db.fetchrow(f"SELECT * FROM {self.table_name} WHERE username = $1;", username)
                 if not data:
                     return False
                 user = self.child_obj.create_from(data)
@@ -194,7 +194,7 @@ class AbstractUserManager(AbstractBaseManager):
 
     async def delete(self, id):
         """Delete a user object from the database."""
-        await self.db.execute(f"DELETE FROM {self.table_name} WHERE id = $1", id)
+        await self.db.execute(f"DELETE FROM {self.table_name} WHERE id = $1;", id)
 
     async def is_user_valid(self, username, password):
         """Checks in the DB if the username + password combination exists. This is a function such that multiple routes can use this function.
@@ -212,7 +212,7 @@ class AbstractUserManager(AbstractBaseManager):
                 return False
     
         # ELSE CHECK DB
-        fetched = await self.db.fetchrow(f"SELECT * FROM {self.table_name} WHERE username = $1", username)
+        fetched = await self.db.fetchrow(f"SELECT * FROM {self.table_name} WHERE username = $1;", username)
         if not fetched:
             return False # No user found with that username
     
@@ -228,7 +228,7 @@ class AbstractUserManager(AbstractBaseManager):
 
     async def is_username_taken(self, username):
         """Returns True if the username is taken, and False if the username is not already taken."""
-        data = await self.db.fetchrow(f"SELECT EXISTS (SELECT username FROM {self.table_name} WHERE username = $1)", username)
+        data = await self.db.fetchrow(f"SELECT EXISTS (SELECT username FROM {self.table_name} WHERE username = $1);", username)
         return data.get("exists")
 
 class StudentManager(AbstractUserManager):
@@ -249,7 +249,7 @@ class StudentManager(AbstractUserManager):
         if password:
             salt, hashed = await hash_func(password) # Function that hashes a password
 
-        await self.db.execute("INSERT INTO student (forename, surname, username, alps, password, salt) VALUES ($1, $2, $3, $4, $5, $6)", forename, surname, username, alps, hashed, salt)
+        await self.db.execute("INSERT INTO student (forename, surname, username, alps, password, salt) VALUES ($1, $2, $3, $4, $5, $6);", forename, surname, username, alps, hashed, salt)
 
     async def update(self, current_student: Student, student: Student, reset_password = False, new_password = ''):
         """Updates a student object. This takes in 2 required args and 2 optional.
@@ -260,10 +260,10 @@ class StudentManager(AbstractUserManager):
         self.cache.remove(current_student.username) # Remove from cache
 
         if reset_password: # Set password to None
-            await self.db.execute("UPDATE student SET forename = $1, surname = $2, username = $3, alps = $4, password = $5, salt = $6 WHERE id = $7", student.forename, student.surname, student.username, student.alps, None, None, student.id)
+            await self.db.execute("UPDATE student SET forename = $1, surname = $2, username = $3, alps = $4, password = $5, salt = $6 WHERE id = $7;", student.forename, student.surname, student.username, student.alps, None, None, student.id)
         else:
             if new_password == '': # Not resetting password
-                await self.db.execute("UPDATE student SET forename = $1, surname = $2, username = $3, alps = $4 WHERE id = $5", student.forename, student.surname, student.username, student.alps, student.id)
+                await self.db.execute("UPDATE student SET forename = $1, surname = $2, username = $3, alps = $4 WHERE id = $5;", student.forename, student.surname, student.username, student.alps, student.id)
             else: # Change password
                 salt, hashed = await hash_func(new_password) # Function that hashes a password
                 await self.db.execute("UPDATE student SET forename = $1, surname = $2, username = $3, alps = $4, password = $5, salt = $6 WHERE id = $7", student.forename, student.surname, student.username, student.alps, hashed, salt, student.id)
@@ -282,18 +282,18 @@ class TeacherManager(AbstractUserManager):
             raise UsernameTaken
         
         salt, hashed = await hash_func(password)
-        await self.db.execute("INSERT INTO teacher (forename, surname, username, title, password, salt) VALUES ($1, $2, $3, $4, $5, $6)", forename, surname, username, title, hashed, salt)
+        await self.db.execute("INSERT INTO teacher (forename, surname, username, title, password, salt) VALUES ($1, $2, $3, $4, $5, $6);", forename, surname, username, title, hashed, salt)
 
     async def update(self, current_teacher: Teacher, teacher: Teacher, new_password = ''):
         """Procedure that updates a given teacher. Takes in a current_teacher, updated_teacher and an optional new_password."""
         self.cache.remove(current_teacher.username)
         if new_password == '':
             # Keeping current password
-            await self.db.execute("UPDATE teacher SET forename = $1, surname = $2, username = $3, title = $4 WHERE id = $5", teacher.forename, teacher.surname, teacher.username, teacher.title, current_teacher.id)
+            await self.db.execute("UPDATE teacher SET forename = $1, surname = $2, username = $3, title = $4 WHERE id = $5;", teacher.forename, teacher.surname, teacher.username, teacher.title, current_teacher.id)
         else:
             # New password
             salt, hashed = hash_func(new_password)
-            await self.db.execute("UPDATE teacher SET forename = $1, surname = $2, username = $3, title = $4, password = $5, salt = $6 WHERE id = $7", teacher.forename, teacher.surname, teacher.username, teacher.title, hashed, salt, current_teacher.id)
+            await self.db.execute("UPDATE teacher SET forename = $1, surname = $2, username = $3, title = $4, password = $5, salt = $6 WHERE id = $7;", teacher.forename, teacher.surname, teacher.username, teacher.title, hashed, salt, current_teacher.id)
 
 class GroupManager(AbstractBaseManager):
     """Manager that controls the database when processing groups."""
@@ -303,7 +303,7 @@ class GroupManager(AbstractBaseManager):
         if id == -1:
             # Get all groups
             to_return = []
-            data = await self.db.fetch("SELECT * FROM group_tbl")
+            data = await self.db.fetch("SELECT * FROM group_tbl;")
             if not data:
                 return False
             for group in data:
@@ -312,30 +312,30 @@ class GroupManager(AbstractBaseManager):
         else:
             if id < 1:
                 return None
-            group = await self.db.fetchrow("SELECT * FROM group_tbl WHERE id = $1", id)
+            group = await self.db.fetchrow("SELECT * FROM group_tbl WHERE id = $1;", id)
             if not group:
                 return False
             return Group.create_from(group)
 
     async def create(self, teacher_id, name, subject):
         """Creates a group from data given."""
-        await self.db.execute("INSERT INTO group_tbl (teacher_id, name, subject) VALUES ($1, $2, $3)", teacher_id, name, subject)
+        await self.db.execute("INSERT INTO group_tbl (teacher_id, name, subject) VALUES ($1, $2, $3);", teacher_id, name, subject)
     
     async def delete(self, group_id):
         """Deletes a group from the database using the group_id given."""
-        await self.db.execute("DELETE FROM group_tbl WHERE id = $1", group_id)
+        await self.db.execute("DELETE FROM group_tbl WHERE id = $1;", group_id)
 
     async def update(self, group: Group):
         """Updates a group given by `group`. The group edited is the `group.id` and its new values are also stored in `group`."""
-        await self.db.execute("UPDATE group_tbl SET teacher_id = $1, subject = $2, name = $3 WHERE id = $4", group.teacher_id, group.subject, group.name, group.id)
+        await self.db.execute("UPDATE group_tbl SET teacher_id = $1, subject = $2, name = $3 WHERE id = $4;", group.teacher_id, group.subject, group.name, group.id)
 
     async def add_student(self, student_id, group_id):
         """Method that adds a student, `student_id`, to the group, `group_id` using the StudentGroupJoin table."""
-        await self.db.execute("INSERT INTO student_group (student_id, group_id) VALUES ($1, $2)", student_id, group_id)
+        await self.db.execute("INSERT INTO student_group (student_id, group_id) VALUES ($1, $2);", student_id, group_id)
 
     async def remove_student(self, student_id, group_id):
         """Method that removes a student, `student_id`, to the group, `group_id` using the StudentGroupJoin table."""
-        await self.db.execute("DELETE FROM student_group WHERE student_id = $1 and group_id = $2", student_id, group_id)
+        await self.db.execute("DELETE FROM student_group WHERE student_id = $1 and group_id = $2;", student_id, group_id)
 
     async def students(self, group_id):
         """Returns all the students in a given group, denoted by `group_id`."""
@@ -351,7 +351,7 @@ class TaskManager(AbstractBaseManager):
 
     async def _mark_exists(self, student_id, task_id):
         """Internal method used to see if a mark already exists in the table."""
-        query_result = await self.db.fetchrow("SELECT EXISTS (SELECT * FROM mark_tbl WHERE student_id = $1 AND task_id = $2)", student_id, task_id)
+        query_result = await self.db.fetchrow("SELECT EXISTS (SELECT * FROM mark_tbl WHERE student_id = $1 AND task_id = $2);", student_id, task_id)
         return query_result.get("exists")
 
     async def get(self, id = -1, student_id = -1, group_id = -1):
@@ -361,12 +361,12 @@ class TaskManager(AbstractBaseManager):
         
         if id == -1 and student_id == -1 and group_id == -1: # Then no parameters have been given
             # Get all tasks
-            data = await self.db.fetch("SELECT * FROM task")
+            data = await self.db.fetch("SELECT * FROM task;")
             return [Task.create_from(x) for x in data]
         
         if id != -1:
             # Search for the specific task
-            data = await self.db.fetchrow("SELECT * FROM task WHERE id = $1", int(id))
+            data = await self.db.fetchrow("SELECT * FROM task WHERE id = $1;", int(id))
             return Task.create_from(data) #TODO: Error checking - if not data, id < 1, etc.
 
         if student_id != -1:
@@ -376,44 +376,44 @@ class TaskManager(AbstractBaseManager):
 
         if group_id != -1:
             # Get all the tasks a group can see
-            data = await self.db.fetch("SELECT * FROM task WHERE group_id = $1", int(group_id))
+            data = await self.db.fetch("SELECT * FROM task WHERE group_id = $1;", int(group_id))
             return [Task.create_from(x) for x in data]
         
 
     async def create(self, group_id, title, desc, date_due, max_score):
         """Creates a new task in the database."""
-        await self.db.execute("INSERT INTO task (title, description, group_id, max_score, date_due) VALUES ($1, $2, $3, $4, $5)", title, desc, group_id, max_score, date_due)
+        await self.db.execute("INSERT INTO task (title, description, group_id, max_score, date_due) VALUES ($1, $2, $3, $4, $5);", title, desc, group_id, max_score, date_due)
 
     async def update(self, task: Task):
         """Updates an existing task given by `task`. The task is edited by looking at `task.id`."""
         params = [task.title, task.description, task.group_id, task.max_score, task.date_set, task.date_due, task.id]
-        await self.db.execute("UPDATE task SET title = $1, description = $2, group_id = $3, max_score = $4, date_set = $5, date_due = $6 WHERE id = $7", *params)
+        await self.db.execute("UPDATE task SET title = $1, description = $2, group_id = $3, max_score = $4, date_set = $5, date_due = $6 WHERE id = $7;", *params)
 
     async def delete(self, task_id):
         """Deletes the a task from the database, given the ID of the task."""
-        task = await self.db.fetchrow("SELECT EXISTS (SELECT * FROM task WHERE id = $1)", task_id)
+        task = await self.db.fetchrow("SELECT EXISTS (SELECT * FROM task WHERE id = $1);", task_id)
         if not task.get("exists"):
             return False # TODO: Perhaps change this to an exception
         else:
-            await self.db.execute("DELETE FROM task WHERE id = $1", task_id)
+            await self.db.execute("DELETE FROM task WHERE id = $1;", task_id)
 
     async def student_completed(self, has_completed:bool, student_id, task_id):
         """Either adds a new reference to the task+student in the mark_tbl table or edits an existing one. This method
         changes their completed variable to `completed` provided."""
         if await self._mark_exists(student_id, task_id):
             # Student exists, update current
-            await self.db.execute("UPDATE mark_tbl SET has_completed = $1 WHERE student_id = $2 AND task_id = $3", has_completed, student_id, task_id)
+            await self.db.execute("UPDATE mark_tbl SET has_completed = $1 WHERE student_id = $2 AND task_id = $3;", has_completed, student_id, task_id)
         else:
             # Make new relationship
-            await self.db.execute("INSERT INTO mark_tbl (student_id, task_id, has_completed) VALUES ($1, $2, $3)", student_id, task_id, has_completed)
+            await self.db.execute("INSERT INTO mark_tbl (student_id, task_id, has_completed) VALUES ($1, $2, $3);", student_id, task_id, has_completed)
 
     async def provide_feedback(self, feedback, score, student_id: int, task_id: int):
         """Provides feedback to a given student for a given task. This method assumes all error checking
         has already been completed."""
         if await self._mark_exists(student_id, task_id):
-            await self.db.execute("UPDATE mark_tbl SET feedback = $1, score = $2, has_completed = True, has_marked = True WHERE student_id = $3 AND task_id = $4", feedback, score, student_id, task_id)
+            await self.db.execute("UPDATE mark_tbl SET feedback = $1, score = $2, has_completed = True, has_marked = True WHERE student_id = $3 AND task_id = $4;", feedback, score, student_id, task_id)
         else:
-            await self.db.execute("INSERT INTO mark_tbl (feedback, score, has_completed, has_marked) VALUES ($1, $2) WHERE student_id = $3 AND task_id = $4", feedback, score, student_id, task_id)
+            await self.db.execute("INSERT INTO mark_tbl (feedback, score, has_completed, has_marked) VALUES ($1, $2) WHERE student_id = $3 AND task_id = $4;", feedback, score, student_id, task_id)
 
 class MarkManager(AbstractBaseManager):
     def __init__(self, *args, **kwargs):
@@ -425,23 +425,23 @@ class MarkManager(AbstractBaseManager):
         If no arguments are given -> all marks are returned"""
         if not mark_id and not student_id and not group_id and not task_id:
             # No parameters given, return all marks
-            data = await self.db.fetch("SELECT * FROM mark_tbl") # TODO: Add ; to the end of all SQL statements
+            data = await self.db.fetch("SELECT * FROM mark_tbl;")
             return data if data else None
 
         if student_id and task_id:
-            data = await self.db.fetch("SELECT * FROM mark_tbl WHERE student_id = $1 AND task_id = $2", student_id, task_id)
+            data = await self.db.fetch("SELECT * FROM mark_tbl WHERE student_id = $1 AND task_id = $2;", student_id, task_id)
             return data if data else None
 
         if task_id:
-            data = await self.db.fetch("SELECT * FROM mark_tbl WHERE task_id = $1", task_id)
+            data = await self.db.fetch("SELECT * FROM mark_tbl WHERE task_id = $1;", task_id)
             return data if data else None # TODO: Make a Mark object
 
         if mark_id:
-            data = await self.db.fetch("SELECT * FROM mark_tbl WHERE id = $1", mark_id)
+            data = await self.db.fetch("SELECT * FROM mark_tbl WHERE id = $1;", mark_id)
             return data if data else None
 
         if student_id:
-            data = await self.db.fetch("SELECT * FROM mark_tbl WHERE student_id = $1", student_id)
+            data = await self.db.fetch("SELECT * FROM mark_tbl WHERE student_id = $1;", student_id)
 
         if group_id:
             pass # TODO: Complete this route
