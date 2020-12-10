@@ -6,6 +6,7 @@ from csv import reader
 import os
 from database import DatabaseHandler
 from managers import StudentManager, TeacherManager, GroupManager, TaskManager, MarkManager
+from utils import HTTPCode
 
 # TODO: Test teacher routes
 # TODO: Test cache limits
@@ -37,6 +38,10 @@ def create_app():
         app.config['group_manager'] = GroupManager()
         app.config['task_manager'] = TaskManager()
         app.config['mark_manager'] = MarkManager()
+
+    @app.route('/', methods = ['GET'])
+    async def root():
+        return '', HTTPCode.OK
 
     return app
 

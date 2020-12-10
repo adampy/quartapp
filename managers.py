@@ -417,7 +417,7 @@ class TaskManager(AbstractBaseManager):
         """Deletes the a task from the database, given the ID of the task."""
         task = await self.db.fetchrow("SELECT EXISTS (SELECT * FROM task WHERE id = $1);", task_id)
         if not task.get("exists"):
-            return False # TODO: Perhaps change this to an exception
+            return False # TODO: Perhaps change this to an exception - make all validation errors throw exceptions which can be handled in the main program too
         else:
             await self.db.execute("DELETE FROM task WHERE id = $1;", task_id)
 
@@ -450,7 +450,7 @@ AND task.id = $2);""", student_id, task_id) # TODO: Test this SQL command works 
 AND teacher_id = $2);""", task_id, auth_obj.id) #SQL that returns True if the auth_obj.id == task_id.group.teacher.id
         perms = query.get("exists")
         if not perms:
-            raise PermissionError # TODO: Make all validation errors throw exceptions. These can be handled in the main program
+            raise PermissionError
 
         if await self._mark_exists(student_id, task_id):
             await self.db.execute("UPDATE mark_tbl SET feedback = $1, score = $2, has_completed = True, has_marked = True WHERE student_id = $3 AND task_id = $4;", feedback, score, student_id, task_id)
