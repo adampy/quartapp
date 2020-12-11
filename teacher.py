@@ -79,7 +79,7 @@ async def get_teacher(param):
     teachers = current_app.config['teacher_manager']
 
     if username:
-        teacher = await teachers.get(username = username)
+        teacher = await teachers.get(username = param)
     else:
         id = int(param) # Change from string to integer if an ID is given
         teacher = await teachers.get(id = id)
