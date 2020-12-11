@@ -94,7 +94,7 @@ async def get_student(param):
     username = request.args.get("username")
 
     if username:
-        current_student = await students.get(username = username)
+        current_student = await students.get(username = param)
     else:
         if not param.isdigit():
             return '', HTTPCode.BADREQUEST # ID supplied is not integer
