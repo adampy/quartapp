@@ -48,7 +48,28 @@ class AbstractBaseObject:
         pass
 
     def __str__(self):
-        return "[" + ', '.join([str(attr) for attr in self.data]) + "]"
+        """Gives the JSON representation of the object."""
+        string = "{"
+        attrs = [x for x in dir(self) if (not x.startswith("__") and not x.endswith("__") and x not in ["make_copy", "create_from", "data"])] # This line gets all attributes of the object, not including methods or `data`
+        i = len(attrs) # Counter used to see if the element being added is the last one (if so it doesn't need a ",")
+        for attr in attrs:
+            i -= 1
+            val = getattr(self, attr)
+            if type(val) == str or type(val) == datetime:
+                # If string, place inside ""
+                string += f'"{attr}": "{val}"'
+            elif type(val) == bool:
+                string += f'"{attr}": {"true" if val else "false"}'
+            else:
+                string += f'"{attr}": {str(val)}'
+
+            if i != 0: # If not the last element in attrs
+                string += ", "#\n"
+
+        string += "}"
+        return string
+        
+        #return "[" + ', '.join([str(attr) for attr in self.data]) + "]" Old __str__ method
 
     def __repr__(self):
         return self.__str__()

@@ -14,12 +14,15 @@ class HTTPCode:
     NOTFOUND = 404
 
 def stringify(data):
-    """Wraps a 2D list of records, data, into <pre> tags ready for it to be displayed via HTML."""
-    to_return = "<pre>"
+    """Wraps a 2D list of records, `data`, into JSON."""
+    to_return = '{"data":['
+    i = len(data)
     for record in data:
+        i -= 1
         to_return += str(record)#', '.join([str(x) for x in record])
-        to_return += '\n'
-    return to_return + "</pre>"
+        if i != 0:
+            to_return += ', ' # This is placed between all elements apart from the last one
+    return to_return + "]}"
 
 def constant_time_string_check(given, actual):
     """A constant time string check that prevents timing attacks."""
