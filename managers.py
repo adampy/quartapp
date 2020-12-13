@@ -325,11 +325,11 @@ class TeacherManager(AbstractUserManager):
     async def create(self, forename, surname, username, title, password):
         """Creates a Teacher in the database. This procedure assumes that the admin code HAS been given AND is valid."""
         if username == "":
-            username = self.make_username(forename, surname)
+            username = await self.make_username(forename, surname)
             if not username:
                 raise UsernameTaken # There is no possible usernames for this person, the must enter one theirselves
         
-        if self.is_username_taken(username):
+        if await self.is_username_taken(username):
             raise UsernameTaken
         
         salt, hashed = await hash_func(password)
