@@ -19,6 +19,13 @@ async def auth():
     else:
         return '', HTTPCode.UNAUTHORIZED
 
+@bp.route("/username/<username>", methods = ["GET"])
+@auth_needed(Auth.ADMIN)
+async def username_taken(username):
+    """Route that returns true if the username is taken. Requires admin authentication with the admin code."""
+    taken = await current_app.config['teacher_manager'].is_username_taken(username)
+    return stringify([taken]), HTTPCode.OK
+
 @bp.route("/", methods = ["GET"])
 @auth_needed(Auth.ANY)
 async def get_teachers():
@@ -70,6 +77,15 @@ async def create_teacher():
         return stringify([teacher]), HTTPCode.CREATED
     except UsernameTaken:
         return '', HTTPCode.BADREQUEST # Username taken
+
+@bp.route("/<id>", methods = ["DELETE"])
+@auth_needed(Auth.ADMIN) # Only admins can delete teachers
+async def delete_teacher(id):
+    if not id.isdigit():
+        return '', HTTPCode.BADREQUEST
+    
+    await current_app.config['teacher_manager'].delete(int(id))
+    return '', HTTPCode.OK
 
 @bp.route('/<param>', methods = ['GET'])
 @auth_needed(Auth.ANY)

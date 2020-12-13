@@ -22,6 +22,13 @@ async def auth():
     else:
         return '', HTTPCode.UNAUTHORIZED
 
+@bp.route("/username/<username>", methods = ["GET"])
+@auth_needed(Auth.ADMIN)
+async def username_taken(username):
+    """Route that returns true if the username is taken. Requires admin authentication with the admin code."""
+    taken = await current_app.config['teacher_manager'].is_username_taken(username)
+    return stringify([taken]), HTTPCode.OK
+
 @bp.route('/password_reset', methods = ['POST'])
 @auth_needed(Auth.NONE)
 async def password_reset():
