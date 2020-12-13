@@ -65,7 +65,7 @@ async def create_teacher():
     teachers = current_app.config['teacher_manager']
 
     try:
-        await teachers.create(data['forename'], data['surname'], data['username'], data['title'], data['password'])
+        await teachers.create(data['forename'], data['surname'], data['username'] if data['username'] else "", data['title'], data['password'])
         teacher = await teachers.get(username = data['username'])
         return stringify([teacher]), HTTPCode.CREATED
     except UsernameTaken:

@@ -268,6 +268,15 @@ class AbstractUserManager(AbstractBaseManager):
         data = await self.db.fetchrow(f"SELECT EXISTS (SELECT username FROM {self.table_name} WHERE username = $1);", username)
         return data.get("exists")
 
+    async def make_username(self, forename, surname):
+        """Makes a unique username for a given `forename` and `surname`."""
+        data = await self.db.fetch(f"SELECT username FROM {self.table_name};")
+        for i in range(1, 100):
+            unique = forename[0] + surname + str(i)
+            if unique not in data:
+                return unique
+        return False
+
 class StudentManager(AbstractUserManager):
     def __init__(self, *args, **kwargs):
         super().__init__(True, *args, **kwargs)
@@ -315,6 +324,11 @@ class TeacherManager(AbstractUserManager):
 
     async def create(self, forename, surname, username, title, password):
         """Creates a Teacher in the database. This procedure assumes that the admin code HAS been given AND is valid."""
+        if username == "":
+            username = self.make_username(forename, surname)
+            if not username:
+                raise UsernameTaken # There is no possible usernames for this person, the must enter one theirselves
+        
         if self.is_username_taken(username):
             raise UsernameTaken
         
