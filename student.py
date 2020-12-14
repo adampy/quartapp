@@ -22,7 +22,7 @@ async def auth():
     else:
         return '', HTTPCode.UNAUTHORIZED
 
-@bp.route("/username/<username>", methods = ["GET"])
+@bp.route("/username/<username>", methods = ["POST"])
 @auth_needed(Auth.ADMIN)
 async def username_taken(username):
     """Route that returns true if the username is taken. Requires admin authentication with the admin code."""
