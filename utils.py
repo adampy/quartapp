@@ -19,7 +19,7 @@ def stringify(data):
     i = len(data)
     for record in data:
         i -= 1
-        to_return += str(record)#', '.join([str(x) for x in record])
+        to_return += str(record).lower()#', '.join([str(x) for x in record])
         if i != 0:
             to_return += ', ' # This is placed between all elements apart from the last one
     return to_return + "]}"
