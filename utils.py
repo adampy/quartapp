@@ -27,11 +27,12 @@ def stringify(data):
 def constant_time_string_check(given, actual):
     """A constant time string check that prevents timing attacks."""
     result = True
-    for i in range(len(given)):
+    if len(given) != len(actual): result = False
+    for i in range(len(actual)):
         try:
             result = (given[i] == actual[i]) and result
         except IndexError: # Handling the exception that actual[i] does not exist <=> len(given) > len(actual)
-            pass
+            result = False
     return result
         
 def is_admin_code_valid(code):
