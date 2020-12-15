@@ -15,10 +15,14 @@ async def get_all_tasks(auth_obj):
     Student auth -> student's tasks returned
     No auth -> BADREQUEST"""
     tasks = current_app.config['task_manager']
-
+    is_completed = request.args.get("is_completed") # Should be set to True if client wants the "has_completed" attribute
+    
     if type(auth_obj) == Student:
         # Get only student's tasks
-        data = await tasks.get(student_id = auth_obj.id)
+        if is_completed == "True":
+            data = await tasks.get(student_id = auth_obj.id, get_completed = True)
+        else:
+            data = await tasks.get(student_id = auth_obj.id)
     else:
         # Get the teacher's tasks (all the tasks from the database)
         data = await tasks.get()

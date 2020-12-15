@@ -128,7 +128,7 @@ class Group(AbstractBaseObject):
 class Task(AbstractBaseObject):
     @classmethod
     def create_from(cls, data: [], *args, **kwargs):
-        """Data supplied must follow: [id, group_id, description, date_set, date_due, max_score]"""
+        """Data supplied must follow: [id, group_id, description, date_set, date_due, max_score, has_completed = False]"""
         super().__init__(cls)
         self = Task()
         self.data = data
@@ -139,6 +139,7 @@ class Task(AbstractBaseObject):
         self.date_set = data[4]
         self.date_due = data[5]
         self.max_score = data[6]
+        self.has_completed = data[7] if data[7] else False
 
         return self
 
@@ -413,7 +414,7 @@ class TaskManager(AbstractBaseManager):
         query_result = await self.db.fetchrow("SELECT EXISTS (SELECT * FROM mark_tbl WHERE student_id = $1 AND task_id = $2);", student_id, task_id)
         return query_result.get("exists")
 
-    async def get(self, id = -1, student_id = -1, group_id = -1):
+    async def get(self, id = -1, student_id = -1, group_id = -1, get_completed = False):
         """Function that returns the tasks. It can take a task id, student id, or a group id as arguments.
         If no task is found -> False
         If no arguments are given -> all tasks are returned"""
@@ -430,7 +431,10 @@ class TaskManager(AbstractBaseManager):
 
         if student_id != -1:
             # Get all the tasks the student can see
-            data = await self.db.fetch("SELECT * FROM task WHERE group_id IN (SELECT group_id FROM student_group WHERE student_id = $1);", int(student_id))
+            data = await self.db.fetch("""WITH t as (SELECT * FROM task WHERE group_id IN (SELECT group_id FROM student_group WHERE student_id = $1))
+SELECT id, group_id, title, description, date_set, date_due, max_score,
+(CASE WHEN has_completed IS null then false else has_completed END) 
+FROM t LEFT JOIN mark_tbl ON t.id = mark_tbl.task_id;""", int(student_id))
             return [Task.create_from(x) for x in data]
 
         if group_id != -1:
