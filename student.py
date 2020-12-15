@@ -24,7 +24,7 @@ async def auth():
 
 @bp.route("/username", methods = ["POST"])
 @auth_needed(Auth.ADMIN)
-async def username_taken(username):
+async def username_taken():
     """Route that returns true if the username is taken. Requires admin authentication with the admin code."""
     data = await request.form
     username = data.get("username")
