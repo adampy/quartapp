@@ -139,7 +139,10 @@ class Task(AbstractBaseObject):
         self.date_set = data[4]
         self.date_due = data[5]
         self.max_score = data[6]
-        self.has_completed = data[7] if data[7] else False
+        try:
+            self.has_completed = data[7]
+        except IndexError:
+            pass
 
         return self
 
@@ -431,10 +434,13 @@ class TaskManager(AbstractBaseManager):
 
         if student_id != -1:
             # Get all the tasks the student can see
-            data = await self.db.fetch("""WITH t as (SELECT * FROM task WHERE group_id IN (SELECT group_id FROM student_group WHERE student_id = $1))
+            if get_completed:
+                data = await self.db.fetch("""WITH t as (SELECT * FROM task WHERE group_id IN (SELECT group_id FROM student_group WHERE student_id = $1))
 SELECT id, group_id, title, description, date_set, date_due, max_score,
 (CASE WHEN has_completed IS null then false else has_completed END) 
 FROM t LEFT JOIN mark_tbl ON t.id = mark_tbl.task_id;""", int(student_id))
+            else:
+                data = await self.db.fetch("SELECT * FROM task WHERE group_id IN (SELECT group_id FROM student_group WHERE student_id = $1);", int(student_id))
             return [Task.create_from(x) for x in data]
 
         if group_id != -1:
