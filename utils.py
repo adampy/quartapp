@@ -28,7 +28,7 @@ def constant_time_string_check(given, actual):
     """A constant time string check that prevents timing attacks."""
     result = True
     if len(given) != len(actual): result = False
-    for i in range(len(actual)):
+    for i in range(len(given)):
         try:
             result = (given[i] == actual[i]) and result
         except IndexError: # Handling the exception that actual[i] does not exist <=> len(given) > len(actual)
