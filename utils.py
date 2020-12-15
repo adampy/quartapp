@@ -29,7 +29,7 @@ def constant_time_string_check(given, actual):
     result = False
     for i in range(len(given)):
         try:
-            result = given[i] == actual[i]
+            result = (given[i] == actual[i]) and result
         except IndexError: # Handling the exception that actual[i] does not exist <=> len(given) > len(actual)
             pass
     return result
