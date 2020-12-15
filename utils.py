@@ -26,7 +26,7 @@ def stringify(data):
 
 def constant_time_string_check(given, actual):
     """A constant time string check that prevents timing attacks."""
-    result = False
+    result = True
     for i in range(len(given)):
         try:
             result = (given[i] == actual[i]) and result
