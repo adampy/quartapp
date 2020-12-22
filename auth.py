@@ -22,8 +22,11 @@ Returns `username, password` or False if the request doesn't contain properly fo
         return False
     try:
         auth = base64.b64decode(header).decode('utf-8')
-        username, password = auth.split(':')
-        return username, password
+        username_password_pair = auth.split(':')
+        if len(username_password_pair) != 2:
+            return False
+        else:
+            return username_password_pair
     except binascii.Error: # Runs if the Authorization header is Base64 compliant
         return False
 
