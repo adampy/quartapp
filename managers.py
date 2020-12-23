@@ -64,7 +64,7 @@ class AbstractBaseObject:
                 # Check here for any IDs that need a "ref" object
                 if (attr.endswith("_id")):
                     obj_name = attr.split("_id")[0]
-                    string += '"' + obj_name + '": {"ref": {"id": ' + str(val) + ', "link": "/' + obj_name + '/' + str(val) + '"}}' # Gives JSON ref object
+                    string += '"' + obj_name + '": {"reference": {"id": ' + str(val) + ', "link": "/' + obj_name + '/' + str(val) + '"}}' # Gives JSON ref object
                 else:
                     string += f'"{attr}": {str(val)}'
 
