@@ -61,7 +61,12 @@ class AbstractBaseObject:
             elif type(val) == bool:
                 string += f'"{attr}": {"true" if val else "false"}'
             else:
-                string += f'"{attr}": {str(val)}'
+                # Check here for any IDs that need a "ref" object
+                if (attr.endswith("_id")):
+                    obj_name = attr.split("_id")[0]
+                    string += '"' + obj_name + '": {"ref": {"id": ' + str(val) + ', "link": "/' + obj_name + '/' + str(val) + '"}}' # Gives JSON ref object
+                else:
+                    string += f'"{attr}": {str(val)}'
 
             if i != 0: # If not the last element in attrs
                 string += ", "#\n"
