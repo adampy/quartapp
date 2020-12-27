@@ -134,7 +134,7 @@ async def task_completed(id, auth_obj):
     
     if request.method == "POST":
         form = await request.form
-        completed = True if form.get("completed") else False
+        completed = True if form.get("completed") == "true" else False
 
         try:
             await tasks.student_completed(completed, auth_obj.id, task_id)
