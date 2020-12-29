@@ -55,7 +55,9 @@ class AbstractBaseObject:
         for attr in attrs:
             i -= 1
             val = getattr(self, attr)
-            if type(val) == str or type(val) == datetime:
+            if val == None:
+                string += f'"{attr}": null'
+            elif type(val) == str or type(val) == datetime:
                 # If string, place inside ""
                 string += f'"{attr}": "{val}"'
             elif type(val) == bool:
