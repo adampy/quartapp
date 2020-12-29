@@ -146,7 +146,7 @@ async def task_completed(id, auth_obj):
         marks = current_app.config['mark_manager']
         mark = await marks.get(student_id = auth_obj.id, task_id = task_id)
         if mark:
-            return stringify(mark), HTTPCode.OK
+            return stringify([mark]), HTTPCode.OK
         else:
             return '', HTTPCode.NOTFOUND
 
