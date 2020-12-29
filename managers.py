@@ -163,7 +163,7 @@ class Mark(AbstractBaseObject):
         self.has_completed = data[2]
         self.has_marked = data[3]
         self.score = data[4]
-        self.feedbacl = data[5]
+        self.feedback = data[5]
 
         return self
 
