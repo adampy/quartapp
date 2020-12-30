@@ -23,14 +23,14 @@ async def auth():
         return '', HTTPCode.UNAUTHORIZED
 
 @bp.route("/username", methods = ["POST"])
-@auth_needed(Auth.ADMIN)
+@auth_needed(Auth.STUDENT)
 async def username_taken():
     """Route that returns true if the username is taken. Requires admin authentication with the admin code."""
     data = await request.form
     username = data.get("username")
     if not username:
         return '', HTTPCode.BADREQUEST
-    taken = await current_app.config['teacher_manager'].is_username_taken(username)
+    taken = await current_app.config['student_manager'].is_username_taken(username)
     return stringify([taken]), HTTPCode.OK
 
 @bp.route('/password_reset', methods = ['POST'])
