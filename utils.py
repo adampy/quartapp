@@ -19,7 +19,10 @@ def stringify(data):
     i = len(data)
     for record in data:
         i -= 1
-        to_return += str(record)#', '.join([str(x) for x in record])
+        if (type(record) == bool):
+            to_return += str(record).lower() # Fixes /student/username issues when returning a boolean - False needs to turn to false
+        else:
+            to_return += str(record)#', '.join([str(x) for x in record])
         if i != 0:
             to_return += ', ' # This is placed between all elements apart from the last one
     return to_return + "]}"
