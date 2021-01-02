@@ -7,15 +7,20 @@ from managers import Student
 
 bp = Blueprint("group", __name__, url_prefix = "/group")
 
-@bp.route('/', methods = ['GET'])
+@bp.route('/', methods = ['GET']) # TODO: Change all these routes to ''
 @auth_needed(Auth.ANY, provide_obj = True)
 async def get_groups(auth_obj):
+    """Subroutine that gets all the groups. A student only has access to their groups, and a teacher can request all groups (be default) or their own by setting ?mine=True"""
     groups = current_app.config['group_manager']
 
     if type(auth_obj) == Student:
         data = await groups.get(student_id = auth_obj.id)
     else:
-        data = await groups.get()
+        get_all_groups = request.args.get("mine") != "True"
+        if get_all_groups:
+            data = await groups.get()
+        else:
+            data = await groups.get(teacher_id = auth_obj.id)
 
     if not data:
         return '', HTTPCode.NOTFOUND

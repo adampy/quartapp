@@ -361,7 +361,7 @@ class TeacherManager(AbstractUserManager):
 class GroupManager(AbstractBaseManager):
     """Manager that controls the database when processing groups."""
 
-    async def get(self, id = -1, student_id = -1):
+    async def get(self, id = -1, student_id = -1, teacher_id = -1):
         """Gets all groups from the database. If the GroupID is not provided then it will return all groups."""
         if student_id != -1:
             # Get students groups
@@ -369,6 +369,11 @@ class GroupManager(AbstractBaseManager):
 FROM student_group
 INNER JOIN group_tbl ON student_group.group_id = group_tbl.id
 WHERE student_group.student_id = $1;""", student_id)
+            return [Group.create_from(x) for x in data] if data else False
+
+        if teacher_id != -1:
+            # Get teachers groups
+            data = await self.db.fetch("SELECT * FROM group_tbl WHERE teacher_id = $1", teacher_id)
             return [Group.create_from(x) for x in data] if data else False
 
         if id == -1:
