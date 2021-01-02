@@ -299,10 +299,11 @@ class StudentManager(AbstractUserManager):
     async def create(self, forename, surname, username, alps, password = None):
         """Creates a student in the DB from the data given. If no password has been given then
         the database keeps the password and salt as null values."""
-        if self.is_username_taken(username):
+        if await self.is_username_taken(username):
             raise UsernameTaken
 
         salt = None
+        hashed = None
         if password:
             salt, hashed = await hash_func(password) # Function that hashes a password
 
