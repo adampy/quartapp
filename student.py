@@ -23,7 +23,7 @@ async def auth():
         return '', HTTPCode.UNAUTHORIZED
 
 @bp.route("/username", methods = ["POST"])
-@auth_needed(Auth.STUDENT)
+@auth_needed(Auth.ANY) # Teacher may check if a username is taken when managing the students
 async def username_taken():
     """Route that returns true if the username is taken. Requires admin authentication with the admin code."""
     data = await request.form
@@ -170,14 +170,14 @@ async def teacher_patch_student(id):
     if surname:
         student.surname = surname
     if alps:
-        if not (alps.isdigit() and (0 <= int(alps) <= 90)):
+        if not (alps.isdigit() and (0 <= int(alps) <= 90)): # TODO: Make this a necessary requirement in POST /student/
             return 'ValueError', HTTPCode.BADREQUEST
         else:
             student.alps = int(alps)
     
     # UPDATE DB
     if form.get('password'): # If password needs changing
-        print("change password")
+        #print("change password")
         await students.update(original, student, reset_password = True)
     else:
         await students.update(original, student)
