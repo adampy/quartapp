@@ -16,6 +16,7 @@ async def get_all_tasks(auth_obj):
     No auth -> BADREQUEST"""
     tasks = current_app.config['task_manager']
     is_completed = request.args.get("is_completed") # Should be set to True if client wants the "has_completed" attribute
+    is_mine = request.args.get("mine") == "True" # Used when a teacher wants to get their own tasks TODO: Perhaps make this a default thing - make default teacher funcitonaity return only the teacher's tasks
     
     if type(auth_obj) == Student:
         # Get only student's tasks
@@ -25,7 +26,10 @@ async def get_all_tasks(auth_obj):
             data = await tasks.get(student_id = auth_obj.id)
     else:
         # Get the teacher's tasks (all the tasks from the database)
-        data = await tasks.get()
+        if is_mine:
+            data = await tasks.get(teacher_id = auth_obj.id)
+        else:
+            data = await tasks.get()
 
     if data:
         return stringify(data), HTTPCode.OK

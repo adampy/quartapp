@@ -430,12 +430,12 @@ class TaskManager(AbstractBaseManager):
         query_result = await self.db.fetchrow("SELECT EXISTS (SELECT * FROM mark_tbl WHERE student_id = $1 AND task_id = $2);", student_id, task_id)
         return query_result.get("exists")
 
-    async def get(self, id = -1, student_id = -1, group_id = -1, get_completed = False):
+    async def get(self, id = -1, student_id = -1, group_id = -1, teacher_id = -1, get_completed = False):
         """Function that returns the tasks. It can take a task id, student id, or a group id as arguments.
         If no task is found -> False
         If no arguments are given -> all tasks are returned"""
         
-        if id == -1 and student_id == -1 and group_id == -1: # Then no parameters have been given
+        if id == -1 and student_id == -1 and group_id == -1 and teacher_id == -1: # Then no parameters have been given
             # Get all tasks
             data = await self.db.fetch("SELECT * FROM task;")
             return [Task.create_from(x) for x in data]
@@ -460,7 +460,12 @@ FROM t LEFT JOIN mark_tbl ON t.id = mark_tbl.task_id;""", int(student_id))
             # Get all the tasks a group can see
             data = await self.db.fetch("SELECT * FROM task WHERE group_id = $1;", int(group_id))
             return [Task.create_from(x) for x in data]
-        
+
+        if teacher_id != -1:
+            # Get all the tasks that a teacher has control of - get all tasks for every group the teacher is assigned
+            data = await self.db.fetch("""WITH t AS (SELECT id FROM group_tbl WHERE teacher_id = $1)
+SELECT * FROM task RIGHT JOIN t ON task.group_id = t.id;""", int(teacher_id))
+            return [Task.create_from(x) for x in data]
 
     async def create(self, group_id, title, desc, date_due, max_score):
         """Creates a new task in the database."""
