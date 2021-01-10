@@ -157,10 +157,8 @@ async def task_completed(id, auth_obj):
 @bp.route('/<id>/current_feedback', methods = ['GET'])
 @auth_needed(Auth.TEACHER)
 async def teacher_get_current_feedback(id):
-    """Route that returns pre-existing feedback for a student and a task. The student_id is given as form data in the field `student`."""
-    form = await request.form
-    student_id = form.get("student")
-
+    """Route that returns pre-existing feedback for a student and a task. The student_id is given as a query string parameter under `student`."""
+    studentid = request.args.get("student")
     if not id.isdigit() or not student_id.isdigit():
         return '', HTTPCode.BADREQUEST
 
