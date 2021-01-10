@@ -21,25 +21,25 @@ async def get_marks():
         if not student_id.isdigit():
             return '', HTTPCode.BADREQUEST
         data = await marks.get(student_id = int(student_id))
-        return stringify([data]), HTTPCode.OK
+        return stringify(data), HTTPCode.OK
     
     elif group_id:
         if not group_id.isdigit():
             return '', HTTPCode.BADREQUEST
         data = await marks.get(group_id = int(group_id))
-        return stringify([data]), HTTPCode.OK
+        return stringify(data), HTTPCode.OK
     
     elif task_id:
         if not task_id.isdigit():
             return '', HTTPCode.BADREQUEST
         data = await marks.get(task_id = int(task_id))
-        return stringify([data]), HTTPCode.OK
+        return stringify(data), HTTPCode.OK
     
     elif mark_id:
         if not mark_id.isdigit():
             return '', HTTPCode.BADREQUEST
         data = await marks.get(mark_id = int(mark_id))
-        return stringify([data]), HTTPCode.OK
+        return stringify(data), HTTPCode.OK
     
     else:
         return '', HTTPCode.BADREQUEST
