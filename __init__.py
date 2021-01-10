@@ -1,5 +1,5 @@
 ﻿from quart import Quart
-import student, teacher, group, task
+import student, teacher, group, task, mark
 import asyncpg
 import asyncio
 from csv import reader
@@ -29,6 +29,7 @@ def create_app():
     app.register_blueprint(teacher.bp)
     app.register_blueprint(group.bp)
     app.register_blueprint(task.bp)
+    app.register_blueprint(mark.bp)
 
     @app.before_serving
     async def on_startup():
