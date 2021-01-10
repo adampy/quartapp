@@ -154,7 +154,7 @@ async def task_completed(id, auth_obj):
         else:
             return '', HTTPCode.NOTFOUND
 
-@bp.route('/<id>/status', methods = ['GET'])
+@bp.route('/<id>/current_feedback', methods = ['GET'])
 @auth_needed(Auth.TEACHER)
 async def teacher_get_current_feedback(id):
     """Route that returns pre-existing feedback for a student and a task. The student_id is given as form data in the field `student`."""
