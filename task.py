@@ -154,6 +154,23 @@ async def task_completed(id, auth_obj):
         else:
             return '', HTTPCode.NOTFOUND
 
+@bp.route('/<id>/status', methods = ['GET'])
+@auth_needed(Auth.TEACHER)
+async def teacher_get_current_feedback(id):
+    """Route that returns pre-existing feedback for a student and a task. The student_id is given as form data in the field `student`."""
+    form = await request.form
+    student_id = form.get("student")
+
+    if not id.isdigit() or not student_id.isdigit():
+        return '', HTTPCode.BADREQUEST
+
+    marks = current_app.config['mark_manager']
+    mark = await marks.get(student_id = int(student_id), task_id = int(id))
+    if mark:
+        return stringify([mark]), HTTPCode.OK
+    else:
+        return '', HTTPCode.NOTFOUND
+
 @bp.route('/<id>/mark', methods = ['GET'])
 @auth_needed(Auth.TEACHER)
 async def get_task_marks(id):
