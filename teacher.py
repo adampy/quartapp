@@ -1,5 +1,5 @@
 ﻿from quart import Blueprint, request, current_app
-from utils import stringify, is_admin_code_valid # Functions
+from utils import stringify, is_admin_code_valid, is_password_sufficient # Functions
 from utils import HTTPCode
 from auth import Auth, auth_needed, hash_func
 from exceptions import UsernameTaken
@@ -63,7 +63,10 @@ async def patch_own_teacher(auth_obj):
     
     # UPDATE DB
     if form.get('password'): # If password needs changing
-        await teachers.update(auth_obj, teacher, new_password = form.get('password'))
+        new_password = form.get('password')
+        if not is_password_sufficient(new_password):
+            return '', HTTPCode.BADREQUEST
+        await teachers.update(auth_obj, teacher, new_password = new_password)
     else:
         await teachers.update(auth_obj, teacher)
     return '', HTTPCode.OK
@@ -76,6 +79,8 @@ async def create_teacher():
     teachers = current_app.config['teacher_manager']
 
     try:
+        if not is_password_sufficient(data['password']):
+            return '', HTTPCode.BADREQUEST
         await teachers.create(data['forename'], data['surname'], data['username'] if data['username'] else "", data['title'], data['password'])
         teacher = await teachers.get(username = data['username'])
         return stringify([teacher]), HTTPCode.CREATED
@@ -169,6 +174,9 @@ async def patch_teacher(id):
     
     # UPDATE DB
     if form.get('password'): # If password needs changing
+        new_password = form.get('password')
+        if not is_password_sufficient(new_password):
+            return '', HTTPCode.BADREQUEST
         await teachers.update(original, teacher, new_password = form.get('password'))
     else:
         await teachers.update(original, teacher)

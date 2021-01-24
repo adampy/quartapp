@@ -64,3 +64,17 @@ def parse_datetime(string: str):
     except ValueError:
         # The datetime information provided is out of the range. E.g. the day provided may be 40.
         raise DateTimeParserError
+
+def is_password_sufficient(password):
+    """Helper function that takes in a password and returns a bool if it is complex enough to be used, otherwise False."""
+    upper, lower, digit = False, False, False
+    if len(password) < 8:
+        return False
+    for char in password:
+        if char.isdigit():
+            digit = True
+        elif char.upper() == char:
+            upper = True
+        elif char.lower() == char:
+            lower == True
+    return (upper and lower and digit)

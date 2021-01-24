@@ -491,7 +491,7 @@ SELECT * FROM task RIGHT JOIN t ON task.group_id = t.id;""", int(teacher_id))
         query = await self.db.fetchrow("""SELECT EXISTS
 (SELECT * FROM task WHERE group_id IN
 (SELECT group_id FROM student_group WHERE student_id = $1)
-AND task.id = $2);""", student_id, task_id) # TODO: Test this SQL command works properly (prev. tested quickly)
+AND task.id = $2);""", student_id, task_id)
         if not query.get("exists"):
             raise PermissionError
 

@@ -1,11 +1,9 @@
 ﻿from quart import Blueprint, request, current_app
-from utils import stringify # Functions
+from utils import stringify, is_password_sufficient # Functions
 from utils import HTTPCode # Enumeratons
 from auth import get_auth_details, hash_func, auth_needed, Auth
 from managers import Student
 from exceptions import UsernameTaken
-
-# TODO: Ensure that passwords are validated when they are entered - >= 8 length, 1 upper case, 1 number, etc
 
 bp = Blueprint("student", __name__, url_prefix = "/student")
 
@@ -46,6 +44,9 @@ async def password_reset():
     if not student[0] and not student[1]:
         # Password *has* been reset
         new_password = form.get("password")
+        if not is_password_sufficient(new_password):
+            return '', HTTPCode.BADREQUEST
+
         salt, hashed = await hash_func(new_password)
         await current_app.config['db_handler'].execute("UPDATE student SET password = $1, salt = $2 WHERE username = $3", hashed, salt, username)
         return '', HTTPCode.OK
@@ -68,9 +69,16 @@ async def new_student():
     data = await request.form
     students = current_app.config['student_manager']
     password = data.get('password') or None # If the password isn't given, make a new password
-    
+    alps = data.get('alps')
+    if not (alps.isdigit() and 0 <= int(alps) <= 90):
+        alps = int(alps)
+    else:
+        return '', HTTPCode.BADREQUEST
+    if password and not is_password_sufficient(password):
+        return '', HTTPCode.BADREQUEST
+
     try:
-        await students.create(data['forename'], data['surname'], data['username'], int(data['alps']), password = password)
+        await students.create(data['forename'], data['surname'], data['username'], alps, password = password)
         student = await students.get(username = data['username'])
         return stringify([student]), HTTPCode.CREATED
     except UsernameTaken:
@@ -94,7 +102,13 @@ async def patch_student(auth_obj):
     if form.get('surname'):
         to_update.surname = form.get('surname')
 
-    await student_manager.update(auth_obj, to_update, new_password = form.get('password') or '')
+    new_password = ''
+    if form.get('password'):
+        new_password = form.get('password')
+        if not is_password_sufficient(new_password):
+            return '', HTTPCode.BADREQUEST
+
+    await student_manager.update(auth_obj, to_update, new_password = new_password)
     return '', HTTPCode.OK
 
 @bp.route('/<param>', methods = ['GET'])
