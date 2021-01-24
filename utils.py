@@ -76,5 +76,5 @@ def is_password_sufficient(password):
         elif char.upper() == char:
             upper = upper or True
         elif char.lower() == char:
-            lower == lower or True
+            lower = lower or True
     return (upper and lower and digit)
