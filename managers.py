@@ -34,7 +34,6 @@ class AbstractUserManager(AbstractBaseManager):
     def __init__(self, student, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.cache = Cache(16)
-        self.is_student = student
         self.table_name = {True: 'student', False:'teacher'}[student] # This is not susseptible to attack (no user inputs)
         self.child_obj = {True: Student, False: Teacher}[student]
 
