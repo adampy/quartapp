@@ -2,7 +2,7 @@
 from utils import stringify, is_password_sufficient # Functions
 from utils import HTTPCode # Enumeratons
 from auth import get_auth_details, hash_func, auth_needed, Auth
-from managers import Student
+from objects import Student
 from exceptions import UsernameTaken
 
 bp = Blueprint("student", __name__, url_prefix = "/student")

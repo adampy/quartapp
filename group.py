@@ -3,7 +3,7 @@ from utils import stringify, parse_datetime # Functions
 from utils import HTTPCode # Enumeratons
 from auth import auth_needed, Auth
 from datetime import datetime, timedelta # For making a task and setting deadline
-from managers import Student
+from objects import Student
 
 bp = Blueprint("group", __name__, url_prefix = "/group")
 

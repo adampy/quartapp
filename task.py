@@ -2,7 +2,7 @@ from quart import Blueprint, request, current_app
 from utils import stringify, parse_datetime
 from utils import HTTPCode
 from auth import auth_needed, Auth
-from managers import Student
+from objects import Student
 from exceptions import DateTimeParserError
 
 bp = Blueprint("task", __name__, url_prefix = "/task")
