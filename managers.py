@@ -50,7 +50,7 @@ class AbstractBaseObject:
     def __str__(self):
         """Gives the JSON representation of the object."""
         string = "{"
-        attrs = [x for x in dir(self) if (not x.startswith("__") and not x.endswith("__") and x not in ["make_copy", "create_from", "data"])] # This line gets all attributes of the object, not including methods or `data`
+        attrs = [x for x in dir(self) if (not x.startswith("__") and not x.endswith("__") and x not in ["make_copy", "create_from", "data", "password", "salt"])] # This line gets all attributes of the object, not including methods, `data`, `password`, and `salt`
         i = len(attrs) # Counter used to see if the element being added is the last one (if so it doesn't need a ",")
         for attr in attrs:
             i -= 1
