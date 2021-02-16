@@ -196,7 +196,7 @@ class TeacherManager(AbstractUserManager):
 class GroupManager(AbstractBaseManager):
     """Manager that controls the database when processing groups."""
 
-    async def get(self, id = -1, student_id = -1, teacher_id = -1):
+    async def get(self, group_id = -1, student_id = -1, teacher_id = -1):
         """Gets all groups from the database. If the GroupID is not provided then it will return all groups."""
         if student_id != -1:
             # Get students groups
@@ -211,7 +211,7 @@ WHERE student_group.student_id = $1;""", student_id)
             data = await self.db.fetch("SELECT * FROM group_tbl WHERE teacher_id = $1", teacher_id)
             return [Group.create_from(x) for x in data] if data else False
 
-        if id == -1:
+        if group_id == -1:
             # Get all groups
             to_return = []
             data = await self.db.fetch("SELECT * FROM group_tbl;")
@@ -221,9 +221,9 @@ WHERE student_group.student_id = $1;""", student_id)
                 to_return.append(Group.create_from(group))
             return to_return
         else:
-            if id < 1:
+            if group_id < 1:
                 return None
-            group = await self.db.fetchrow("SELECT * FROM group_tbl WHERE id = $1;", id)
+            group = await self.db.fetchrow("SELECT * FROM group_tbl WHERE id = $1;", group_id)
             if not group:
                 return False
             return Group.create_from(group)
