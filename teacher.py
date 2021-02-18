@@ -106,6 +106,8 @@ async def get_teacher(param):
     if username:
         teacher = await teachers.get(username = param)
     else:
+        if not param.isdigit():
+            return '', HTTPCode.BADREQUEST
         id = int(param) # Change from string to integer if an ID is given
         teacher = await teachers.get(id = id)
 
