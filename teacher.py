@@ -83,7 +83,7 @@ async def create_teacher():
             return '', HTTPCode.BADREQUEST
         await teachers.create(data['forename'], data['surname'], data['username'] if data['username'] else "", data['title'], data['password'])
         teacher = await teachers.get(username = data['username'])
-        return stringify([teacher]), HTTPCode.CREATED
+        return stringify([teacher]), HTTPCode.CREATED, {"Location":bp.url_prefix + "/" + str(teacher.id)}
     except UsernameTaken:
         return '', HTTPCode.BADREQUEST # Username taken
 

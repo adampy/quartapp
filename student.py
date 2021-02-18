@@ -23,7 +23,7 @@ async def auth():
 @bp.route("/username", methods = ["POST"])
 @auth_needed(Auth.ANY) # Teacher may check if a username is taken when managing the students
 async def username_taken():
-    """Route that returns true if the username is taken. Requires admin authentication with the admin code."""
+    """Route that returns true if the username is taken. Requires some type of authentication."""
     data = await request.form
     username = data.get("username")
     if not username:
@@ -70,7 +70,7 @@ async def new_student():
     students = current_app.config['student_manager']
     password = data.get('password') or None # If the password isn't given, make a new password
     alps = data.get('alps')
-    if not (alps.isdigit() and 0 <= int(alps) <= 90):
+    if (alps.isdigit() and 0 <= int(alps) <= 90):
         alps = int(alps)
     else:
         return '', HTTPCode.BADREQUEST
@@ -80,7 +80,7 @@ async def new_student():
     try:
         await students.create(data['forename'], data['surname'], data['username'], alps, password = password)
         student = await students.get(username = data['username'])
-        return stringify([student]), HTTPCode.CREATED
+        return stringify([student]), HTTPCode.CREATED, {"Location":bp.url_prefix + "/" + str(student.id)}
     except UsernameTaken:
         return '', HTTPCode.BADREQUEST # Username taken
 
@@ -184,7 +184,7 @@ async def teacher_patch_student(id):
     if surname:
         student.surname = surname
     if alps:
-        if not (alps.isdigit() and (0 <= int(alps) <= 90)): # TODO: Make this a necessary requirement in POST /student/
+        if not (alps.isdigit() and (0 <= int(alps) <= 90)):
             return 'ValueError', HTTPCode.BADREQUEST
         else:
             student.alps = int(alps)

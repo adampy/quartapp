@@ -53,7 +53,9 @@ async def make_group(auth_obj):
 
     groups = current_app.config['group_manager']
     await groups.create(auth_obj.id, data['name'], data['subject'])
-    return '', HTTPCode.CREATED
+    teachers_groups = await groups.get(teacher_id = auth_obj.id)
+    new_group = max(teachers_groups, key = lambda x: x.id)
+    return '', HTTPCode.CREATED, {"Location":bp.url_prefix + "/" + str(new_group.id)}
 
 @bp.route('/<id>', methods = ['DELETE'])
 @auth_needed(Auth.TEACHER)
@@ -190,7 +192,9 @@ async def make_new_task(id):
 
     tasks = current_app.config['task_manager']
     await tasks.create(int(id), title, description, date_due, int(max_score))
-    return '', HTTPCode.CREATED
+    all_tasks = await tasks.get(group_id = int(id))
+    new_task = max(all_tasks, key = lambda x: x.id)
+    return '', HTTPCode.CREATED, {"Location": "/task/" + str(new_task.id)}
 
 @bp.route('/<id>/task', methods = ['GET'])
 @auth_needed(Auth.ANY)

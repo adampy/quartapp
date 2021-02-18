@@ -1,3 +1,5 @@
+from datetime import datetime # For the cache
+
 class Cache:
     def __init__(self, limit, *args, **kwargs):
         self.c = {}
