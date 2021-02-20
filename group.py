@@ -84,7 +84,7 @@ async def put_group(id):
         return '', HTTPCode.BADREQUEST # Some necessary arguments are missing, return 400
 
     groups = current_app.config['group_manager']
-    to_update = await groups.get(id= int(id))
+    to_update = await groups.get(group_id= int(id))
     if not to_update:
         return '', HTTPCode.NOTFOUND
     to_update.teacher_id = int(teacher_id)
@@ -102,7 +102,7 @@ async def patch_group(id):
     
     data = await request.form
     groups = current_app.config['group_manager']
-    current = await groups.get(id = int(id))
+    current = await groups.get(group_id = int(id))
     if not current:
         return '', HTTPCode.NOTFOUND
 
