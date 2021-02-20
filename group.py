@@ -34,7 +34,7 @@ async def get_group(id):
         return '', HTTPCode.BADREQUEST
 
     groups = current_app.config['group_manager']
-    data = await groups.get(id = int(id))
+    data = await groups.get(group_id = int(id))
     if not data:
         return '', HTTPCode.NOTFOUND
     return stringify([data]), HTTPCode.OK
