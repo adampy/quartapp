@@ -39,10 +39,11 @@ def create_app():
         app.config['group_manager'] = GroupManager()
         app.config['task_manager'] = TaskManager()
         app.config['mark_manager'] = MarkManager()
-
+        
     @app.route('/', methods = ['GET'])
     async def root():
-        return '', HTTPCode.OK
+        links_string = "{\"links\":{\"student\":\"" + student.bp.url_prefix + "\", \"teacher\":\"" + teacher.bp.url_prefix + "\", \"group\":\"" + group.bp.url_prefix + "\", \"task\":\"" + task.bp.url_prefix + "\", \"mark\":\"" + mark.bp.url_prefix + "\"}}"
+        return links_string, HTTPCode.OK
 
     return app
 
