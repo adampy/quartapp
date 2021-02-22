@@ -30,7 +30,7 @@ async def username_taken():
     taken = await current_app.config['teacher_manager'].is_username_taken(username)
     return stringify([taken]), HTTPCode.OK
 
-@bp.route("/", methods = ["GET"])
+@bp.route("", methods = ["GET"])
 @auth_needed(Auth.ANY)
 async def get_teachers():
     """/teacher route"""
@@ -39,7 +39,7 @@ async def get_teachers():
         return '', HTTPCode.NOTFOUND
     return stringify(teachers), HTTPCode.OK
 
-@bp.route("/", methods = ["PATCH"])
+@bp.route("", methods = ["PATCH"])
 @auth_needed(Auth.TEACHER, provide_obj = True)
 async def patch_own_teacher(auth_obj):
     form = await request.form
@@ -71,7 +71,7 @@ async def patch_own_teacher(auth_obj):
         await teachers.update(auth_obj, teacher)
     return '', HTTPCode.OK
 
-@bp.route("/", methods = ["POST"])
+@bp.route("", methods = ["POST"])
 @auth_needed(Auth.ADMIN) # (Pass obj will return the Admin code here if done with admin code, else a new teacher)
 async def create_teacher():
     """Creates a new teacher."""
