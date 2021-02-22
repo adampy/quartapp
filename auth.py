@@ -46,7 +46,7 @@ def auth_needed(authentication: Auth, provide_obj: bool = False):
             if authentication != Auth.ADMIN:
                 details = get_auth_details(request)
                 if not details:
-                    return '', HTTPCode.BADREQUEST # Improperly formatted Authorization header
+                    return '', HTTPCode.UNAUTHORIZED # Improperly formatted Authorization header
                 else:
                     username, password = details # Unpacking tuple
 
