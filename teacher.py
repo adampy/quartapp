@@ -82,7 +82,8 @@ async def create_teacher():
         if not is_password_sufficient(data['password']):
             return '', HTTPCode.BADREQUEST
         await teachers.create(data['forename'], data['surname'], data['username'] if data['username'] else "", data['title'], data['password'])
-        teacher = await teachers.get(username = data['username'])
+        all_teachers = await teachers.get()
+        teacher = max(all_teachers, key = lambda x: x.id) # Returns the newest teacher
         return stringify([teacher]), HTTPCode.CREATED, {"Location":bp.url_prefix + "/" + str(teacher.id)}
     except UsernameTaken:
         return '', HTTPCode.BADREQUEST # Username taken
