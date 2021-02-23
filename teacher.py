@@ -12,7 +12,10 @@ async def auth():
     """The route that the client uses to verify credentials."""
     teacher_manager = current_app.config['teacher_manager']
     data = await request.form
-    username, password = data['username'], data['password']
+    username = data.get("username")
+    password = data.get("password")
+    if not (username and password):
+        return '', HTTPCode.BADREQUEST
 
     if await teacher_manager.is_teacher_valid(username, password):
         return '', HTTPCode.OK
