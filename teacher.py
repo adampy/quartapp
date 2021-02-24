@@ -69,9 +69,15 @@ async def patch_own_teacher(auth_obj):
         new_password = form.get('password')
         if not is_password_sufficient(new_password):
             return '', HTTPCode.BADREQUEST
-        await teachers.update(auth_obj, teacher, new_password = new_password)
+        try:
+            await teachers.update(auth_obj, teacher, new_password = new_password)
+        except UsernameTaken:
+            return '', HTTPCode.BADREQUEST
     else:
-        await teachers.update(auth_obj, teacher)
+        try:
+            await teachers.update(auth_obj, teacher)
+        except UsernameTaken:
+            return '', HTTPCode.BADREQUEST
     return '', HTTPCode.OK
 
 @bp.route("/", methods = ["POST"])
@@ -154,7 +160,10 @@ async def put_teacher(id):
         to_update.surname = surname
         to_update.title = title
 
-    await teachers.update(current_teacher, to_update)
+    try:
+        await teachers.update(current_teacher, to_update)
+    except UsernameTaken:
+        return '', HTTPCode.BADREQUEST
     return '', HTTPCode.OK
     
 @bp.route("/<id>", methods = ["PATCH"])
@@ -191,7 +200,13 @@ async def patch_teacher(id):
         new_password = form.get('password')
         if not is_password_sufficient(new_password):
             return '', HTTPCode.BADREQUEST
-        await teachers.update(original, teacher, new_password = form.get('password'))
+        try:
+            await teachers.update(original, teacher, new_password = form.get('password'))
+        except UsernameTaken:
+            return '', HTTPCode.BADREQUEST
     else:
-        await teachers.update(original, teacher)
+        try:
+            await teachers.update(original, teacher)
+        except UsernameTaken:
+            return '', HTTPCode.BADREQUEST
     return '', HTTPCode.OK

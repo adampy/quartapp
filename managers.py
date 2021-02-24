@@ -149,6 +149,11 @@ class StudentManager(AbstractUserManager):
         student: Student (The updated student object)
         reset_password = False (defaults to False, can be turned to True if the passwords needs resetting)
         new_password = '' (if a new password is given, it will be changed and a new salt is generated."""
+        
+        username_exists = await self.db.execute("SELECT * FROM teacher WHERE username = $1 AND id != $2", student.username, current_student.id)
+        if username_exists:
+            raise UsernameTaken
+        
         self.cache.remove(current_student.username) # Remove from cache
 
         if reset_password: # Set password to None
@@ -183,7 +188,13 @@ class TeacherManager(AbstractUserManager):
 
     async def update(self, current_teacher: Teacher, teacher: Teacher, new_password = ''):
         """Procedure that updates a given teacher. Takes in a current_teacher, updated_teacher and an optional new_password."""
+        
+        username_exists = await self.db.execute("SELECT * FROM teacher WHERE username = $1 AND id != $2", teacher.username, current_teacher.id)
+        if username_exists:
+            raise UsernameTaken
+        
         self.cache.remove(current_teacher.username)
+
         if new_password == '':
             # Keeping current password
             await self.db.execute("UPDATE teacher SET forename = $1, surname = $2, username = $3, title = $4 WHERE id = $5;", teacher.forename, teacher.surname, teacher.username, teacher.title, current_teacher.id)

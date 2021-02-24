@@ -154,7 +154,10 @@ async def put_student(id):
         to_update.surname = surname
         to_update.alps = alps
 
-    await students.update(current_student, to_update)
+    try:
+        await students.update(current_student, to_update)
+    except UsernameTaken:
+        return '', HTTPCode.BADREQUEST
     return '', HTTPCode.OK
 
 @bp.route('/<id>', methods = ['PATCH'])
@@ -192,9 +195,15 @@ async def teacher_patch_student(id):
     # UPDATE DB
     if form.get('password'): # If password needs changing
         #print("change password")
-        await students.update(original, student, reset_password = True)
+        try:
+            await students.update(original, student, reset_password = True)
+        except UsernameTaken:
+            return '', HTTPCode.BADREQUEST
     else:
-        await students.update(original, student)
+        try:
+            await students.update(original, student)
+        except UsernameTaken:
+            return '', HTTPCode.BADREQUEST
     return '', HTTPCode.OK
 
 @bp.route('/<id>', methods = ['DELETE'])
