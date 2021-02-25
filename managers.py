@@ -200,7 +200,7 @@ class TeacherManager(AbstractUserManager):
             await self.db.execute("UPDATE teacher SET forename = $1, surname = $2, username = $3, title = $4 WHERE id = $5;", teacher.forename, teacher.surname, teacher.username, teacher.title, current_teacher.id)
         else:
             # New password
-            salt, hashed = hash_func(new_password)
+            salt, hashed = await hash_func(new_password)
             await self.db.execute("UPDATE teacher SET forename = $1, surname = $2, username = $3, title = $4, password = $5, salt = $6 WHERE id = $7;", teacher.forename, teacher.surname, teacher.username, teacher.title, hashed, salt, current_teacher.id)
 
 class GroupManager(AbstractBaseManager):
