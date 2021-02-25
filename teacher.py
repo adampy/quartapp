@@ -151,7 +151,7 @@ async def put_teacher(id):
     username = form.get('username')
     forename = form.get('forename')
     surname = form.get('surname')
-    title = int(form.get('title'))
+    title = form.get('title')
     if not (username and forename and surname and title):
         return '', HTTPCode.BADREQUEST
     else:
