@@ -167,7 +167,7 @@ async def put_teacher(id):
     return '', HTTPCode.OK
     
 @bp.route("/<id>", methods = ["PATCH"])
-@auth_needed(Auth.TEACHER)
+@auth_needed(Auth.ADMIN)
 async def patch_teacher(id):
     """PATCH teacher"""
     if not id.isdigit():
