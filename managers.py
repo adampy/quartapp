@@ -150,7 +150,7 @@ class StudentManager(AbstractUserManager):
         reset_password = False (defaults to False, can be turned to True if the passwords needs resetting)
         new_password = '' (if a new password is given, it will be changed and a new salt is generated."""
         
-        query = await self.db.fetchrow("SELECT * FROM student WHERE username = $1 AND id != $2", student.username, current_student.id)
+        query = await self.db.fetchrow("SELECT EXISTS(SELECT * FROM student WHERE username = $1 AND id != $2);", student.username, current_student.id)
         if query.get("exists"):
             raise UsernameTaken
         
@@ -189,7 +189,7 @@ class TeacherManager(AbstractUserManager):
     async def update(self, current_teacher: Teacher, teacher: Teacher, new_password = ''):
         """Procedure that updates a given teacher. Takes in a current_teacher, updated_teacher and an optional new_password."""
         
-        query = await self.db.fetchrow("SELECT * FROM teacher WHERE username = $1 AND id != $2", teacher.username, current_teacher.id)
+        query = await self.db.fetchrow("SELECT EXISTS(SELECT * FROM teacher WHERE username = $1 AND id != $2);", teacher.username, current_teacher.id)
         if query.get("exists"):
             raise UsernameTaken
         
