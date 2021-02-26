@@ -13,7 +13,10 @@ async def auth():
     """The route that the client uses to verify credentials."""
     student_manager = current_app.config['student_manager']
     data = await request.form
-    username, password = data['username'], data['password']
+    username = data.get("username")
+    password = data.get("password")
+    if not (username and password:
+        return '', HTTPCode.BADREQUEST)
     
     if await student_manager.is_student_valid(username, password):
         return '', HTTPCode.OK
@@ -77,9 +80,15 @@ async def new_student():
     if password and not is_password_sufficient(password):
         return '', HTTPCode.BADREQUEST
 
+    forename = data.get("forename")
+    surname = data.get("surname")
+    username = data.get("username")
+    if not (forename and surname and username):
+        return '', HTTPCode.BADREQUEST
+
     try:
-        await students.create(data['forename'], data['surname'], data['username'], alps, password = password)
-        student = await students.get(username = data['username'])
+        await students.create(forename, surname, username, alps, password = password)
+        student = await students.get(username = username)
         return stringify([student]), HTTPCode.CREATED, {"Location":bp.url_prefix + "/" + str(student.id)}
     except UsernameTaken:
         return '', HTTPCode.BADREQUEST # Username taken
