@@ -99,10 +99,10 @@ class AbstractUserManager(AbstractBaseManager):
             return False # No user found with that username
     
         # CHECK HASHES
+        if user.password is None: # Then its a student account with no password
+            return False
         user = self.child_obj.create_from(fetched)
         salt = bytearray.fromhex(user.salt)
-        if salt is None: # Then its a student account with no password
-            return False
         attempt = await hash_func(password, salt)
         if attempt[1] == user.password:
             self.cache.add(username, user)
