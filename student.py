@@ -16,7 +16,7 @@ async def auth():
     username = data.get("username")
     password = data.get("password")
     if not (username and password):
-        return '', HTTPCode.BADREQUEST)
+        return '', HTTPCode.BADREQUEST
     
     if await student_manager.is_student_valid(username, password):
         return '', HTTPCode.OK
