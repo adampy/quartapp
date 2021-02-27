@@ -143,6 +143,9 @@ async def get_student(param):
 @auth_needed(Auth.TEACHER)
 async def put_student(id):
     """PUT STUDENT"""
+    if not id.isdigit():
+        return '', HTTPCode.BADREQUEST
+        
     form = await request.form
     students = current_app.config['student_manager']
     current_student = await students.get(id = int(id))
