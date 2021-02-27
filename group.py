@@ -186,7 +186,7 @@ async def get_group_students(id):
     
     groups = current_app.config['group_manager']
     group = await groups.get(group_id = int(id))
-    if group:
+    if not group:
         return '', HTTPCode.NOTFOUND
 
     data = await groups.students(int(id))
