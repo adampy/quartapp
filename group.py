@@ -124,7 +124,10 @@ async def patch_group(id):
     if teacher_id:
         current.teacher_id = int(teacher_id)
     
-    await groups.update(current)
+    try:
+        await groups.update(current)
+    except Exception as e: # The only exception that may arise is a FK constraint error on teacher_id
+        return '', HTTPCode.BADREQUEST
     return '', HTTPCode.OK
 
 @bp.route('/<id>/join', methods = ['POST'])
