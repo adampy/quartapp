@@ -4,6 +4,7 @@ from utils import HTTPCode # Enumeratons
 from auth import auth_needed, Auth
 from datetime import datetime, timedelta # For making a task and setting deadline
 from objects import Student
+from exceptions import DateTimeParserError
 
 bp = Blueprint("group", __name__, url_prefix = "/group")
 
@@ -192,16 +193,22 @@ async def make_new_task(id):
     max_score = data.get("max_score") or None
     to_parse = data.get("date_due") or None
 
-    date_due = parse_datetime(to_parse)
+    try:
+        date_due = parse_datetime(to_parse)
+    except DateTimeParserError:
+        return '', HTTPCode.BADREQUEST
 
     if not title or not description or not max_score or not max_score.isdigit() or not date_due:
         return '', HTTPCode.BADREQUEST # Not all necessary args given, return BADREQUEST
 
     tasks = current_app.config['task_manager']
-    await tasks.create(int(id), title, description, date_due, int(max_score))
-    all_tasks = await tasks.get(group_id = int(id))
-    new_task = max(all_tasks, key = lambda x: x.id)
-    return '', HTTPCode.CREATED, {"Location": "/task/" + str(new_task.id)}
+    try:
+        await tasks.create(int(id), title, description, date_due, int(max_score))
+        all_tasks = await tasks.get(group_id = int(id))
+        new_task = max(all_tasks, key = lambda x: x.id)
+        return '', HTTPCode.CREATED, {"Location": "/task/" + str(new_task.id)}
+    except Exception as e:
+        return '', HTTPCode.BADREQUEST
 
 @bp.route('/<id>/task', methods = ['GET'])
 @auth_needed(Auth.ANY)
