@@ -3,6 +3,7 @@ from auth import hash_func, Auth
 from utils import HTTPCode
 from exceptions import UsernameTaken
 from objects import Student, Teacher, Task, Group, Mark, Cache
+from asyncpg import UniqueViolationError
 
 class AbstractBaseManager:
     """This is an Abstract Base Class (ABC) that only contians references to the methods that need to be implemented by its children.
@@ -254,7 +255,10 @@ WHERE student_group.student_id = $1;""", student_id)
 
     async def add_student(self, student_id, group_id):
         """Method that adds a student, `student_id`, to the group, `group_id` using the StudentGroupJoin table."""
-        await self.db.execute("INSERT INTO student_group (student_id, group_id) VALUES ($1, $2);", student_id, group_id)
+        try:
+            await self.db.execute("INSERT INTO student_group (student_id, group_id) VALUES ($1, $2);", student_id, group_id)
+        except UniqueViolationError: # Key already exists, do not worry
+            pass
 
     async def remove_student(self, student_id, group_id):
         """Method that removes a student, `student_id`, to the group, `group_id` using the StudentGroupJoin table."""
