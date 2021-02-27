@@ -171,6 +171,7 @@ async def leave_group(id):
     if not raw_students:
         return '', HTTPCode.BADREQUEST
 
+    student_manager = current_app.config['student_manager']
     students = [int(id) for id in raw_students.split(',') if id.isdigit() and await student_manager.get(int(id))]
     for student_id in students:
         await groups.remove_student(student_id, int(id))
