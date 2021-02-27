@@ -138,6 +138,11 @@ async def join_group(id):
     if not id.isdigit():
         return '', HTTPCode.BADREQUEST
 
+    groups = current_app.config['group_manager']
+    group = await groups.get(group_id = int(id))
+    if not group:
+        return '', HTTPCode.NOTFOUND
+
     data = await request.form
     raw_students = data.get("students") or None
     if not raw_students:
@@ -145,7 +150,6 @@ async def join_group(id):
 
     student_manager = current_app.config['student_manager']
     students = [int(id) for id in raw_students.split(',') if id.isdigit() and await student_manager.get(int(id))]
-    groups = current_app.config['group_manager']
     for student_id in students:
         await groups.add_student(student_id, int(id))
     return '', HTTPCode.OK
@@ -157,13 +161,17 @@ async def leave_group(id):
     if not id.isdigit():
         return '', HTTPCode.BADREQUEST
 
+    groups = current_app.config['group_manager']
+    group = await groups.get(group_id = int(id))
+    if not group:
+        return '', HTTPCode.NOTFOUND
+
     data = await request.form
     raw_students = data.get("students") or None
     if not raw_students:
         return '', HTTPCode.BADREQUEST
 
-    students = [int(id) for id in raw_students.split(',') if id.isdigit()]
-    groups = current_app.config['group_manager']
+    students = [int(id) for id in raw_students.split(',') if id.isdigit() and await student_manager.get(int(id))]
     for student_id in students:
         await groups.remove_student(student_id, int(id))
     return '', HTTPCode.OK
