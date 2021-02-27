@@ -117,7 +117,10 @@ async def patch_student(auth_obj):
         if not is_password_sufficient(new_password):
             return '', HTTPCode.BADREQUEST
 
-    await student_manager.update(auth_obj, to_update, new_password = new_password)
+    try:
+        await student_manager.update(auth_obj, to_update, new_password = new_password)
+    except UsernameTaken:
+        return '', HTTPCode.BADREQUEST
     return '', HTTPCode.OK
 
 @bp.route('/<param>', methods = ['GET'])
