@@ -8,10 +8,7 @@ from database import DatabaseHandler
 from managers import StudentManager, TeacherManager, GroupManager, TaskManager, MarkManager
 from utils import HTTPCode
 
-# TODO: Test teacher routes
 # TODO: Test cache limits
-# TODO: Test student PUT route
-
 # TODO: Try and except for database inputs - move try and except into DatabaseHandler methods
 
 try:

@@ -7,7 +7,7 @@ from objects import Student
 
 bp = Blueprint("group", __name__, url_prefix = "/group")
 
-@bp.route('/', methods = ['GET']) # TODO: Change all these routes to ''
+@bp.route('/', methods = ['GET'])
 @auth_needed(Auth.ANY, provide_obj = True)
 async def get_groups(auth_obj):
     """Subroutine that gets all the groups. A student only has access to their groups, and a teacher can request all groups (be default) or their own by setting ?mine=True"""
