@@ -143,7 +143,8 @@ async def join_group(id):
     if not raw_students:
         return '', HTTPCode.BADREQUEST
 
-    students = [int(id) for id in raw_students.split(',') if id.isdigit()]
+    student_manager = current_app.config['student_manager']
+    students = [int(id) for id in raw_students.split(',') if id.isdigit() and await student_manager.get(int(id))]
     groups = current_app.config['group_manager']
     for student_id in students:
         await groups.add_student(student_id, int(id))
