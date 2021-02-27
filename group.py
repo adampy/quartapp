@@ -195,7 +195,7 @@ async def make_new_task(id):
 
     try:
         date_due = parse_datetime(to_parse)
-    except DateTimeParserError:
+    except Exception as e:
         return '', HTTPCode.BADREQUEST
 
     if not title or not description or not max_score or not max_score.isdigit() or not date_due:
