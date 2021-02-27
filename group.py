@@ -45,14 +45,14 @@ async def make_group(auth_obj):
     """Subroutine that makes a new group. The teacher that accesses this route automatically becomes the teacher of the group.
     This can be changed by doing a PATCH request afterwards."""
     data = await request.form
-    name = data.get('name') or None
-    subject = data.get('subject') or None
+    name = data.get('name')
+    subject = data.get('subject')
 
-    if not name or not subject:
+    if not (name and subject):
         return '', HTTPCode.BADREQUEST # Not all necessary arguments given
 
     groups = current_app.config['group_manager']
-    await groups.create(auth_obj.id, data['name'], data['subject'])
+    await groups.create(auth_obj.id, name, subject)
     teachers_groups = await groups.get(teacher_id = auth_obj.id)
     new_group = max(teachers_groups, key = lambda x: x.id)
     return '', HTTPCode.CREATED, {"Location":bp.url_prefix + "/" + str(new_group.id)}
@@ -90,8 +90,12 @@ async def put_group(id):
     to_update.teacher_id = int(teacher_id)
     to_update.subject = subject
     to_update.name = name
-    await groups.update(to_update)
-    return '', HTTPCode.OK
+    
+    try:
+        await groups.update(to_update)
+        return '', HTTPCode.OK
+    except Exception as e: # The only exception that may arise is a FK constraint error on teacher_id
+        return '', HTTPCode.BADREQUEST
 
 @bp.route('/<id>', methods = ['PATCH'])
 @auth_needed(Auth.TEACHER)
