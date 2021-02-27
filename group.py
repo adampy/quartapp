@@ -187,7 +187,7 @@ async def make_new_task(id):
     if not id.isdigit():
         return '', HTTPCode.BADREQUEST
 
-    groups = current_app['group_manager']
+    groups = current_app.config['group_manager']
     group = await groups.get(group_id = int(id))
     if not group:
         return '', HTTPCode.NOTFOUND
