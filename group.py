@@ -187,6 +187,10 @@ async def make_new_task(id):
     if not id.isdigit():
         return '', HTTPCode.BADREQUEST
 
+    group = await current_app['group_manager'].get(group_id = int(id))
+    if not group:
+        return '', HTTPCode.NOTFOUND
+
     data = await request.form
     title = data.get("title") or None
     description = data.get("description") or None
