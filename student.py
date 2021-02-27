@@ -154,7 +154,14 @@ async def put_student(id):
     username = form.get('username')
     forename = form.get('forename')
     surname = form.get('surname')
-    alps = int(form.get('alps'))
+
+    if not alps.isdigit():
+        return '', HTTPCode.BADREQUEST
+    alps = form.get('alps')
+    if not (0 <= alps <= 90):
+        return '', HTTPCode.BADREQUEST
+    alps = int(alps)
+
     if not (username and forename and surname and alps):
         return '', HTTPCode.BADREQUEST
     else:
