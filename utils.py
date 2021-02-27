@@ -50,7 +50,7 @@ def parse_datetime(string: str):
     hour, minutes = time.split(":")
 
     if not (day.isdigit() and month.isdigit() and year.isdigit() and hour.isdigit() and minutes.isdigit()):
-        return None # If any component is not integer
+        raise DateTimeParserError # If any component is not integer
     else:
         day = int(day)
         month = int(month)
