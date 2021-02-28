@@ -299,10 +299,11 @@ class TaskManager(AbstractBaseManager):
         if student_id != -1:
             # Get all the tasks the student can see
             if get_completed:
-                data = await self.db.fetch("""WITH t as (SELECT * FROM task WHERE group_id IN (SELECT group_id FROM student_group WHERE student_id = $1))
-SELECT id, group_id, title, description, date_set, date_due, max_score,
-(CASE WHEN has_completed IS null then false else has_completed END) 
-FROM t LEFT JOIN mark_tbl ON t.id = mark_tbl.task_id;""", int(student_id))
+                data = await self.db.fetch("""WITH t as (SELECT * FROM task WHERE group_id IN (SELECT group_id FROM student_group WHERE student_id = $1)),
+m as (SELECT task_id, has_completed FROM mark_tbl WHERE student_id = $1)
+SELECT t.id, group_id, title, description, date_set, date_due, max_score,
+(CASE WHEN m.has_completed IS null then false else m.has_completed END)
+FROM t LEFT JOIN m ON t.id = m.task_id;""", int(student_id))
             else:
                 data = await self.db.fetch("SELECT * FROM task WHERE group_id IN (SELECT group_id FROM student_group WHERE student_id = $1);", int(student_id))
             return [Task.create_from(x) for x in data]
