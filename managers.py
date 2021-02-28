@@ -302,7 +302,7 @@ class TaskManager(AbstractBaseManager):
                 data = await self.db.fetch("""WITH t as (SELECT * FROM task WHERE group_id IN (SELECT group_id FROM student_group WHERE student_id = $1))
 SELECT id, group_id, title, description, date_set, date_due, max_score,
 (CASE WHEN has_completed IS null then false else has_completed END) 
-FROM t LEFT JOIN mark_tbl ON t.id = mark_tbl.task_id WHERE mark_tbl.student_id = $1;""", int(student_id))
+FROM t LEFT JOIN mark_tbl ON t.id = mark_tbl.task_id;""", int(student_id))
             else:
                 data = await self.db.fetch("SELECT * FROM task WHERE group_id IN (SELECT group_id FROM student_group WHERE student_id = $1);", int(student_id))
             return [Task.create_from(x) for x in data]
