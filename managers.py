@@ -316,7 +316,7 @@ FROM t LEFT JOIN m ON t.id = m.task_id;""", int(student_id))
         if teacher_id != -1:
             # Get all the tasks that a teacher has control of - get all tasks for every group the teacher is assigned
             data = await self.db.fetch("""WITH t AS (SELECT id FROM group_tbl WHERE teacher_id = $1)
-SELECT * FROM task RIGHT JOIN t ON task.group_id = t.id;""", int(teacher_id))
+SELECT * FROM task INNER JOIN t ON task.group_id = t.id;""", int(teacher_id))
             return [Task.create_from(x) for x in data]
 
     async def create(self, group_id, title, desc, date_due, max_score):
