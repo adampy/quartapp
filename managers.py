@@ -221,7 +221,7 @@ WHERE student_group.student_id = $1;""", student_id)
 
         if teacher_id != -1:
             # Get teachers groups
-            data = await self.db.fetch("SELECT * FROM group_tbl WHERE teacher_id = $1", teacher_id)
+            data = await self.db.fetch("SELECT * FROM group_tbl WHERE teacher_id = $1;", teacher_id)
             return [Group.create_from(x) for x in data] if data else False
 
         if group_id == -1:
