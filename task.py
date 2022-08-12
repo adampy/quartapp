@@ -190,9 +190,9 @@ async def prov_feedback(id, auth_obj):
     data = await request.form
     student_id = data.get("student") or None
     score = data.get("score") or None
-    feedback = data.get("feedback") or None
+    feedback = data.get("feedback") or "No feedback given."
 
-    if not student_id or not student_id.isdigit() or not id.isdigit() or not score or not score.isdigit() or not feedback:
+    if not student_id or not student_id.isdigit() or not id.isdigit() or not score or not score.isdigit():
         return '', HTTPCode.BADREQUEST
     
     student_id = int(student_id)
